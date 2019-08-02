@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/jogg-0.0.7.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/joml-1.9.10.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/jorbis-0.0.15.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/luaj-jse-3.0.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/slick-util3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/tritonus_share.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/vorbisspi1.0.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/lwjgl 3.2.1/lwjgl.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/lwjgl 3.2.1/lwjgl-glfw.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/lwjgl 3.2.1/lwjgl-glfw-natives-windows.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/lwjgl 3.2.1/lwjgl-natives-windows.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/lwjgl 3.2.1/lwjgl-openal.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/lwjgl 3.2.1/lwjgl-openal-natives-windows.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/lwjgl 3.2.1/lwjgl-opengl.jar"/>
+	<classpathentry kind="lib" path="C:/Users/User/Desktop/Programming/Java Collab Workspace/RaiderGameEngine/lib/lwjgl 3.2.1/lwjgl-opengl-natives-windows.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
