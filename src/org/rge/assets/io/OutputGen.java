@@ -1,9 +1,14 @@
 package org.rge.assets.io;
 
-public interface OutputGen {
+import java.io.OutputStream;
 
-	public void init();
-	public OutputBundle getOutput(String identifier);
+public interface OutputGen {
+	
+	public static boolean canWrite(String path) { return false; }
+	
+	public void init(String path);
+	public boolean exists(String path);
+	public OutputStream getOutput(String path);
 	public void destroy();
 	
 }

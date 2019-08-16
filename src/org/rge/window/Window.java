@@ -23,6 +23,7 @@ public class Window {
 	
 	public Window(String title, int width, int height) {
 		
+		
 		input = new Input(this);
 		
 		// ----------------- GLFW INIT --------------
@@ -34,6 +35,9 @@ public class Window {
 		glfwDefaultWindowHints();
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		
+		this.width = width;
+		this.height = height;
 		
 		window = glfwCreateWindow(width, height, title, NULL, NULL);
 		if(window == NULL)
@@ -66,6 +70,17 @@ public class Window {
 	
 	public Window(String title) {
 		this(title, DEF_WIDTH, DEF_HEIGHT);
+	}
+	
+	public void setSize(int width, int height) {
+		if(width < 0 || height < 0)
+			return;
+		
+		this.width = width;
+		this.height = height;
+		
+		glfwSetWindowSize(window, width, height);
+		
 	}
 	
 	public void show() {
@@ -103,7 +118,27 @@ public class Window {
 	}
 
 	public void pollEvents() {
+		input.update();
 		glfwPollEvents();
+	}
+
+	public void swapBuffers() {
+		glfwSwapBuffers(window);
+	}
+
+	public void center() {
+		try (MemoryStack stack = stackPush()) {
+			IntBuffer pWidth = stack.mallocInt(1);
+			IntBuffer pHeight = stack.mallocInt(1);
+			
+			glfwGetWindowSize(window, pWidth, pHeight);
+			
+			GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+			
+			glfwSetWindowPos(window,
+					(vidmode.width() - pWidth.get(0))/2,
+					(vidmode.height() - pHeight.get(0))/2);
+		}
 	}
 	
 }

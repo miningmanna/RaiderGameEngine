@@ -1,5 +1,6 @@
 package org.rge.assets;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,26 +16,33 @@ import java.util.HashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.newdawn.slick.opengl.Texture;
 import org.rge.assets.io.InputGen;
 import org.rge.assets.models.Model;
-import org.rge.assets.models.ModelLoader;
+import org.rge.assets.models.Model.RawData;
 import org.rge.graphics.Shader;
+import org.rge.loaders.ModelRawDataLoader;
+import org.rge.loaders.TextureRawLoader;
 
 public class AssetManager {
 	
 	private HashMap<String, Shader> shaders;
 	
-	private ModelLoader modelLoader;
+	private GLLoader glLoader;
 	
 	private ArrayList<InputGen> inputGens;
+	private HashMap<String, ModelRawDataLoader> modelRawDataLoaders;
+	private HashMap<String, TextureRawLoader> textureRawLoaders;
 	
-	private static HashMap<String, InputGenClassContainer> inputGenClasses = new HashMap<>();
-	public static void registerInputGenClass(String type, Class<? extends InputGen> genClass) {
+	private static HashMap<String, ClassContainer> inputGenClasses = new HashMap<>();
+	private static HashMap<String, ClassContainer> modelRawDataLoaderClasses = new HashMap<>();
+	private static HashMap<String, ClassContainer> textureRawLoaderClasses = new HashMap<>();
+	public static void registerClass(String type, HashMap<String, ClassContainer> map, Class<?> genClass) {
 		
 		type = type.toUpperCase();
 		
-		InputGenClassContainer container = new InputGenClassContainer();
-		container.inputGenClass = genClass;
+		ClassContainer container = new ClassContainer();
+		container.mClass = genClass;
 		
 		boolean hasZeroArgConstructor = false;
 		Constructor<?>[] constructors = genClass.getConstructors();
@@ -47,31 +55,19 @@ public class AssetManager {
 		}
 		
 		if(!hasZeroArgConstructor) {
-			System.err.println("Cant use InputGen: " + genClass);
+			System.err.println("Cant use Class: " + genClass);
 			System.err.println("No constructor with 0 parameters");
 			return;
 		}
 		
-		inputGenClasses.put(type, container);
+		System.out.println("Adding container: " + container + " as " + type);
+		
+		map.put(type, container);
 		
 	}
 	
-	private static class InputGenClassContainer {
-		public int constructorIndex;
-		public Class<? extends InputGen> inputGenClass;
-		public InputGen constructInputGen() {
-			try {
-				return (InputGen) inputGenClass.getConstructors()[constructorIndex].newInstance();
-			} catch (Exception e) {
-				System.err.println("Failed to create instance of: " + inputGenClass);
-				e.printStackTrace();
-			}
-			return null;
-		}
-	}
-	
-	@SuppressWarnings("unchecked")
 	public static void loadClassesFromJar(File jarFile) throws IOException {
+		
 		if(jarFile == null)
 			return;
 		
@@ -91,25 +87,82 @@ public class AssetManager {
 			try {
 				Class<?> mClass = cl.loadClass(className);
 				
-				String typeValue = null;
-				
-				int wishedModifiers = 0 | Modifier.PUBLIC | Modifier.STATIC | Modifier.FINAL;
-				Field[] fields = mClass.getDeclaredFields();
-				for(Field f : fields) {
-					if(	f.getModifiers() == wishedModifiers &&
-						f.getType() == String.class &&
-						f.getName().equals("TYPE")) {
-						typeValue = ((String) f.get(null)).toUpperCase();
-						break;
-					}
-				}
-				if(typeValue == null)
-					continue;
 				
 				Type[] interfaces = mClass.getGenericInterfaces();
 				for(Type t : interfaces) {
-					if(t.getTypeName().equals("org.rge.assets.io.InputGen"))
-						registerInputGenClass(typeValue, (Class<? extends InputGen>) mClass);
+					if(t.getTypeName().equals("org.rge.assets.io.InputGen")) {
+						
+						String typeValue = null;
+						
+						int wishedModifiers = 0 | Modifier.PUBLIC | Modifier.STATIC | Modifier.FINAL;
+						Field[] fields = mClass.getDeclaredFields();
+						for(Field f : fields) {
+							if(	f.getModifiers() == wishedModifiers &&
+								f.getType() == String.class &&
+								f.getName().equals("INPUTGEN_TYPE")) {
+								typeValue = ((String) f.get(null)).toUpperCase();
+								break;
+							}
+						}
+						if(typeValue != null) {
+							registerClass(typeValue, inputGenClasses, mClass);
+							continue;
+						}
+					}
+					
+					// TODO: implement for loader interfaces
+					
+					if(t.getTypeName().equals("org.rge.loaders.ModelRawDataLoader")) {
+						System.out.println("Found ModelRawDataLoader class! " + mClass);
+						String[] typeValues = null;
+						
+						int wishedModifiers = 0 | Modifier.PUBLIC | Modifier.STATIC | Modifier.FINAL;
+						Field[] fields = mClass.getDeclaredFields();
+						for(Field f : fields) {
+							if(	f.getModifiers() == wishedModifiers &&
+								f.getType() == String[].class &&
+								f.getName().equals("MODELRAWDATALOADER_TYPES")) {
+								typeValues = (String[]) f.get(null);
+								break;
+							}
+						}
+						System.out.println("TYPE_VALUES: " + typeValues);
+						if(typeValues != null) {
+							for(String loaderType : typeValues) {
+								loaderType = loaderType.toUpperCase();
+								System.out.println("Registering ModelRawDataLoader type: " + loaderType + " for class " + mClass);
+								registerClass(loaderType, modelRawDataLoaderClasses, mClass);
+							}
+							continue;
+						}
+						
+					}
+					if(t.getTypeName().equals("org.rge.loaders.TextureRawLoader")) {
+						System.out.println("Found TextureRawLoader class! " + mClass);
+						String[] typeValues = null;
+						
+						int wishedModifiers = 0 | Modifier.PUBLIC | Modifier.STATIC | Modifier.FINAL;
+						Field[] fields = mClass.getDeclaredFields();
+						for(Field f : fields) {
+							if(	f.getModifiers() == wishedModifiers &&
+								f.getType() == String[].class &&
+								f.getName().equals("TEXTURERAWLOADER_TYPES")) {
+								typeValues = (String[]) f.get(null);
+								break;
+							}
+						}
+						System.out.println("TYPE_VALUES: " + typeValues);
+						if(typeValues != null) {
+							for(String loaderType : typeValues) {
+								loaderType = loaderType.toUpperCase();
+								System.out.println("Registering TextureRawLoader type: " + loaderType + " for class " + mClass);
+								registerClass(loaderType, textureRawLoaderClasses, mClass);
+							}
+							continue;
+						}
+						
+					}
+					
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -122,32 +175,87 @@ public class AssetManager {
 		
 	}
 	
+	private static class ClassContainer {
+		public int constructorIndex;
+		public Class<?> mClass;
+		public Object constructInputGen() {
+			try {
+				return mClass.getConstructors()[constructorIndex].newInstance();
+			} catch (Exception e) {
+				System.err.println("Failed to create instance of: " + mClass);
+				e.printStackTrace();
+			}
+			return null;
+		}
+	}
+	
 	public AssetManager() {
 		
 		inputGens = new ArrayList<>();
+		shaders = new HashMap<>();
+		glLoader = new GLLoader();
 		
-		modelLoader = new ModelLoader();
+		modelRawDataLoaders = new HashMap<>();
+		for(String key : modelRawDataLoaderClasses.keySet()) {
+			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ " + key);
+			ModelRawDataLoader loader = (ModelRawDataLoader) modelRawDataLoaderClasses.get(key).constructInputGen();
+			System.out.println("Constructing a new loader instane for type: " + key + " " + loader);
+			loader.init();
+			modelRawDataLoaders.put(key, loader);
+		}
+		
+		textureRawLoaders = new HashMap<>();
+		for(String key : textureRawLoaderClasses.keySet()) {
+			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ " + key);
+			TextureRawLoader loader = (TextureRawLoader) textureRawLoaderClasses.get(key).constructInputGen();
+			System.out.println("Constructing a new loader instane for type: " + key + " " + loader);
+			loader.init();
+			textureRawLoaders.put(key, loader);
+		}
 		
 	}
 	
 	public void loadModel(Model model) {
 		
-		modelLoader.loadModelVerts(model);
+		glLoader.loadModel(model);
 		
+	
+	}
+	// TODO: remove the need from functions to supply the type of a file for mounting and asset loading
+	
+	public Texture loadTexture(BufferedImage img) {
+		if(img == null)
+			return null;
+		return glLoader.loadTexture(img);
 		
+	}
+	
+	public RawData getModelRawData(String type, String path) {
+		if(type == null || path == null)
+			return null;
+		type = type.toUpperCase();
 		
+		ModelRawDataLoader loader = modelRawDataLoaders.get(type);
+		System.out.println("Getting modelLoader: " + loader);
+		if(loader == null)
+			return null;
+		
+		RawData res = loader.getModelRawData(path, this);
+		System.out.println("Loader returned RawData: " + res);
+		
+		return res;
 	}
 	
 	public void registerInputGen(String type, String path) {
 		
 		type = type.toUpperCase();
 		
-		InputGenClassContainer container = inputGenClasses.get(type);
-		System.out.println(container);
+		ClassContainer container = inputGenClasses.get(type);
+		System.out.println("Container: " + container);
 		if(container == null)
 			return;
 		
-		InputGen inputGen = container.constructInputGen();
+		InputGen inputGen = (InputGen) container.constructInputGen();
 		inputGen.init(path);
 		inputGens.add(inputGen);
 		
@@ -172,7 +280,7 @@ public class AssetManager {
 	
 	public Shader getShader(String shaderPath) throws IOException {
 		
-		shaderPath = sanitizeAssetPath(shaderPath);
+		shaderPath = "SHADERS/" + sanitizeAssetPath(shaderPath);
 		
 		Shader shader = shaders.get(shaderPath);
 		if(shader != null)
@@ -180,8 +288,10 @@ public class AssetManager {
 		
 		InputStream vertIn = getAssetSanitized(shaderPath + ".VERT");
 		InputStream fragIn = getAssetSanitized(shaderPath + ".FRAG");
-		if(vertIn == null || fragIn == null)
+		if(vertIn == null || fragIn == null) {
+			System.out.println("Unable to get assets");
 			return null;
+		}
 		
 		String vertSource = getStreamAsString(vertIn);
 		vertIn.close();
@@ -193,12 +303,18 @@ public class AssetManager {
 	
 	public void destroy() {
 		
-		modelLoader.destroy();
+		for(InputGen inputGen : inputGens)
+			inputGen.destroy();
+		
+		for(String key : shaders.keySet())
+			shaders.get(key).destroy();
+		
+		glLoader.destroy();
 		
 	}
 	
 	public static String sanitizeAssetPath(String path) {
-		return path.replaceAll("\\\\", "/").toUpperCase();
+		return path.replaceAll("\\\\", "/");
 	}
 	
 	public static String getStreamAsString(InputStream in) throws IOException {
@@ -211,6 +327,39 @@ public class AssetManager {
 			str.append(new String(buffer, 0, len));
 		
 		return str.toString();
+	}
+	
+	public BufferedImage getTextureRaw(String type, String path) {
+		if(type == null || path == null)
+			return null;
+		type = type.toUpperCase();
+		
+		TextureRawLoader loader = textureRawLoaders.get(type);
+		System.out.println("Getting modelLoader: " + loader);
+		if(loader == null)
+			return null;
+		
+		BufferedImage res = loader.getRawImage(path, this);
+		System.out.println("Loader returned raw Image: " + res);
+		
+		return res;
+	}
+	
+	public BufferedImage getTextureRaw(String path) {
+		if(path == null)
+			return null;
+		String type = null;
+		for(String key : textureRawLoaders.keySet()) {
+			if(textureRawLoaders.get(key).canRead(path)) {
+				type = key;
+				break;
+			}
+		}
+		if(type != null)
+			return getTextureRaw(type, path);
+		else
+			return null;
+		
 	}
 	
 }

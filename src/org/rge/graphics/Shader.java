@@ -3,15 +3,21 @@ package org.rge.graphics;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 
+import java.awt.Color;
 import java.nio.FloatBuffer;
 
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
+import org.rge.graphics.light.DirectionalLight;
+import org.rge.graphics.light.LightGroup;
+import org.rge.graphics.light.PointLight;
 
 public class Shader {
-	// TODO: implement
+	
+	// TODO: remember light uniform locations
 	
 	private int program, vShader, fShader;
 	
@@ -25,6 +31,10 @@ public class Shader {
 		glLinkProgram(program);
 		glValidateProgram(program);
 		
+	}
+	
+	public int getShaderID() {
+		return program;
 	}
 	
 	public void start() {
@@ -91,6 +101,18 @@ public class Shader {
 		setUniVector3f(glGetUniformLocation(program, name), v);
 	}
 	
+	public void setUniVector4f(int pos, Vector4f v) {
+		if(v == null)
+			throw new IllegalArgumentException("Vector cant be null!");
+		glUniform4f(pos, v.x, v.y, v.z, v.w);
+	}
+	
+	public void setUniVector4f(String name, Vector4f v) {
+		if(name == null)
+			throw new IllegalArgumentException("Name cant be null!");
+		setUniVector4f(glGetUniformLocation(program, name), v);
+	}
+	
 	public void setUniBoolean(int pos, boolean b) {
 		if(b)
 			glUniform1i(pos, 1);
@@ -129,6 +151,101 @@ public class Shader {
 		}
 		
 		return res;
+	}
+	
+	public void setUniIntegerArray(String name, int[] array) {
+		if(name == null)
+			throw new IllegalArgumentException("Name cant be null!");
+		setUniIntegerArray(glGetUniformLocation(program, name), array);
+	}
+	
+	public void setUniIntegerArray(int pos, int[] array) {
+		if(array == null)
+			return;
+		glUniform1iv(pos, array);
+	}
+	
+	public void setUniInteger(String name, int i) {
+		setUniInteger(glGetUniformLocation(program, name), i);
+	}
+	
+	public void setUniInteger(int pos, int i) {
+		if(pos < 0)
+			return;
+		glUniform1i(pos, i);
+	}
+	
+	public void setCamera(Matrix4f camera) {
+		setUniMatrix4f("camera", camera);
+	}
+	
+	public void setTransform(Matrix4f transform) {
+		setUniMatrix4f("transform", transform);
+	}
+	
+	public void setLights(LightGroup lights) {
+		
+		if(lights == null) {
+			
+			Vector4f ambientVec = new Vector4f();
+			setUniVector4f("ambientLight", ambientVec);
+			for(int i = 0; i < LightGroup.POINTLIGHT_COUNT; i++)
+				setUniFloat("pointLights[" + i + "].intensity", 0);
+			for(int i = 0; i < LightGroup.DIRECTIONALLIGHT_COUNT; i++)
+				setUniFloat("directionalLights[" + i + "].intensity", 0);
+			
+			return;
+		}
+		
+		if(lights.ambientLight != null) {
+			Color ambientColor = lights.ambientLight.color;
+			Vector4f ambientVec = new Vector4f(	ambientColor.getRed()	/ 255.0f,
+													ambientColor.getGreen()	/ 255.0f,
+													ambientColor.getBlue()	/ 255.0f,
+													lights.ambientLight.intensity);
+			setUniVector4f("ambientLight", ambientVec);
+		} else {
+			Vector4f ambientVec = new Vector4f();
+			setUniVector4f("ambientLight", ambientVec);
+		}
+		
+		Vector3f temp = new Vector3f();
+		for(int i = 0; i < lights.directionalLights.length; i++) {
+			DirectionalLight light = lights.directionalLights[i];
+			String baseName = "directionalLights[" + i + "]";
+			if(light == null) {
+				setUniFloat(baseName + ".intensity", 0);
+				continue;
+			}
+			
+			setUniVector3f(baseName + ".direction", light.dir);
+			temp.x = light.color.getRed()	/ 255.0f;
+			temp.y = light.color.getGreen()	/ 255.0f;
+			temp.z = light.color.getBlue()	/ 255.0f;
+			setUniVector3f(baseName + ".color", temp);
+			setUniFloat(baseName + ".intensity", light.intensity);
+			setUniFloat(baseName + ".clamp", light.clamp);
+			
+		}
+		
+		for(int i = 0; i < lights.pointLights.length; i++) {
+			PointLight light = lights.pointLights[i];
+			String baseName = "pointLights[" + i + "]";
+			if(light == null) {
+				setUniFloat(baseName + ".intensity", 0);
+				continue;
+			}
+			
+			setUniVector3f(baseName + ".pos", light.pos);
+			temp.x = light.color.getRed()	/ 255.0f;
+			temp.y = light.color.getGreen()	/ 255.0f;
+			temp.z = light.color.getBlue()	/ 255.0f;
+			setUniVector3f(baseName + ".color", temp);
+			setUniFloat(baseName + ".intensity", light.intensity);
+			setUniFloat(baseName + ".clamp", light.clamp);
+			
+		}
+		
 	}
 	
 }
