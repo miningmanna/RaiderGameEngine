@@ -17,6 +17,7 @@ import org.rge.graphics.light.AmbientLight;
 import org.rge.graphics.light.DirectionalLight;
 import org.rge.graphics.light.LightGroup;
 import org.rge.graphics.light.PointLight;
+import org.rge.graphics.light.SpotLight;
 import org.rge.node.DrawNode;
 import org.rge.node.Move;
 import org.rge.window.Input;
@@ -45,7 +46,7 @@ public class Main {
 		context.setSize(1920, 1080);
 		context.window.center();
 		context.window.show();
-		context.setClearColor(Color.RED);
+		context.setClearColor(Color.BLACK);
 		
 //		Shader shader = null;
 //		try {
@@ -118,7 +119,7 @@ public class Main {
 		LightGroup lights = new LightGroup();
 		lights.ambientLight = new AmbientLight(0.1f);
 		
-		DirectionalLight dirLight = new DirectionalLight(new Vector3f(1, -1, 1), 0.2f);
+		DirectionalLight dirLight = new DirectionalLight(new Vector3f(1, -1, 1), 0.1f);
 		dirLight.color = Color.YELLOW;
 		lights.addLight(dirLight);
 		
@@ -127,6 +128,11 @@ public class Main {
 		camLight.clamp = 1;
 		camLight.pos = c.position;
 		lights.addLight(camLight);
+		
+		SpotLight spot = new SpotLight(null, 100000, 10);
+		spot.position = c.position;
+		spot.direction = c.direction;
+		lights.addLight(spot);
 		
 		while(!context.shouldClose()) {
 			

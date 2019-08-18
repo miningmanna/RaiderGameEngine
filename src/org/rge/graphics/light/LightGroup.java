@@ -2,16 +2,19 @@ package org.rge.graphics.light;
 
 public class LightGroup {
 	
-	public static final int POINTLIGHT_COUNT = 4;
-	public static final int DIRECTIONALLIGHT_COUNT = 4;
+	public static final int POINTLIGHT_COUNT			= 4;
+	public static final int DIRECTIONALLIGHT_COUNT	= 4;
+	public static final int SPOTLIGHT_COUNT			= 4;
 	
-	public PointLight[] pointLights;
-	public DirectionalLight[] directionalLights;
+	public PointLight[]			pointLights;
+	public DirectionalLight[]	directionalLights;
+	public SpotLight[]			spotLights;
 	public AmbientLight ambientLight;
 	
 	public LightGroup() {
-		this.pointLights = new PointLight[POINTLIGHT_COUNT];
-		this.directionalLights = new DirectionalLight[DIRECTIONALLIGHT_COUNT];
+		this.pointLights		= new PointLight[POINTLIGHT_COUNT];
+		this.directionalLights	= new DirectionalLight[DIRECTIONALLIGHT_COUNT];
+		this.spotLights			= new SpotLight[SPOTLIGHT_COUNT];
 	}
 	
 	public int addLight(PointLight light) {
@@ -20,6 +23,10 @@ public class LightGroup {
 	
 	public int addLight(DirectionalLight light) {
 		return putObjectIntoArray(light, directionalLights);
+	}
+	
+	public int addLight(SpotLight light) {
+		return putObjectIntoArray(light, spotLights);
 	}
 	
 	public void setAmbient(AmbientLight light) {

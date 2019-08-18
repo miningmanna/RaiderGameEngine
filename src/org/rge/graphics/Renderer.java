@@ -116,9 +116,6 @@ public class Renderer {
 		}
 		
 		glDrawElements(GL_TRIANGLES, surf.indLength, GL_UNSIGNED_INT, surf.indOffset*4);
-		m.shader.setUniBoolean("wire", true);
-		glDrawElements(GL_LINE_LOOP, surf.indLength, GL_UNSIGNED_INT, surf.indOffset*4);
-		m.shader.setUniBoolean("wire", false);
 		
 		if(surf.doubleSided)
 			glEnable(GL_CULL_FACE);

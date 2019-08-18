@@ -14,6 +14,7 @@ import org.lwjgl.BufferUtils;
 import org.rge.graphics.light.DirectionalLight;
 import org.rge.graphics.light.LightGroup;
 import org.rge.graphics.light.PointLight;
+import org.rge.graphics.light.SpotLight;
 
 public class Shader {
 	
@@ -193,6 +194,8 @@ public class Shader {
 				setUniFloat("pointLights[" + i + "].intensity", 0);
 			for(int i = 0; i < LightGroup.DIRECTIONALLIGHT_COUNT; i++)
 				setUniFloat("directionalLights[" + i + "].intensity", 0);
+			for(int i = 0; i < LightGroup.SPOTLIGHT_COUNT; i++)
+				setUniFloat("spotLights[" + i + "].intensity", 0);
 			
 			return;
 		}
@@ -236,13 +239,33 @@ public class Shader {
 				continue;
 			}
 			
-			setUniVector3f(baseName + ".pos", light.pos);
+			setUniVector3f(baseName + ".position", light.pos);
 			temp.x = light.color.getRed()	/ 255.0f;
 			temp.y = light.color.getGreen()	/ 255.0f;
 			temp.z = light.color.getBlue()	/ 255.0f;
 			setUniVector3f(baseName + ".color", temp);
 			setUniFloat(baseName + ".intensity", light.intensity);
 			setUniFloat(baseName + ".clamp", light.clamp);
+			
+		}
+		
+		for(int i = 0; i < lights.spotLights.length; i++) {
+			SpotLight light = lights.spotLights[i];
+			String baseName = "spotLights[" + i + "]";
+			if(light == null) {
+				setUniFloat(baseName + ".intensity", 0);
+				continue;
+			}
+			
+			setUniVector3f(baseName + ".position", light.position);
+			setUniVector3f(baseName + ".direction", light.direction);
+			temp.x = light.color.getRed()	/ 255.0f;
+			temp.y = light.color.getGreen()	/ 255.0f;
+			temp.z = light.color.getBlue()	/ 255.0f;
+			setUniVector3f(baseName + ".color", temp);
+			setUniFloat(baseName + ".intensity", light.intensity);
+			setUniFloat(baseName + ".clamp", light.clamp);
+			setUniFloat(baseName + ".cutoff", light.cutoff);
 			
 		}
 		

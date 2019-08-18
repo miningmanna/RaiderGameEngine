@@ -7,6 +7,8 @@ import java.awt.Color;
 import org.rge.graphics.Camera;
 import org.rge.graphics.Renderer;
 import org.rge.graphics.light.LightGroup;
+import org.rge.lua.LuaEngine;
+import org.rge.lua.EngineReference;
 import org.rge.node.DrawNode;
 import org.luaj.vm2.LuaValue;
 import org.lwjgl.opengl.GL;
@@ -18,7 +20,7 @@ public class RGEContext {
 	
 	Window window;
 	AssetManager am;
-	LuaInterface luaInterface;
+	EngineReference luaInterface;
 	LuaEngine luaEngine;
 	Renderer renderer;
 	
@@ -32,8 +34,7 @@ public class RGEContext {
 		clearColor = Color.BLACK;
 		
 		am = new AssetManager();
-		luaInterface = new LuaInterface();
-		luaEngine = new LuaEngine(luaInterface);
+		luaEngine = new LuaEngine(this);
 		
 	}
 	
