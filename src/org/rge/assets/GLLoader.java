@@ -30,7 +30,7 @@ public class GLLoader {
 	}
 	
 	public void loadModel(Model model) {
-		
+		System.out.println(model.vao);
 		model.vao = glGenVertexArrays();
 		vaos.add(model.vao);
 		glBindVertexArray(model.vao);
@@ -62,6 +62,12 @@ public class GLLoader {
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		vbos.add(vbo);
 		
+		for(int i = 0; i < verts.rawVerts.length/verts.dimension; i++) {
+			for(int j = 0; j < verts.dimension; j++)
+				System.out.print(verts.rawVerts[i*verts.dimension + j] + " ");
+			System.out.println();
+		}
+		System.out.println("-------------------");
 		FloatBuffer buff = BufferUtils.createFloatBuffer(verts.rawVerts.length);
 		buff.put(verts.rawVerts);
 		buff.flip();

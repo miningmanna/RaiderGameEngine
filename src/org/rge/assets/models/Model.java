@@ -39,6 +39,7 @@ public class Model {
 			surf.isTranslucent = rawSurf.isTranslucent;
 			surf.additiveColor = rawSurf.additiveColor;
 			surf.midPoint = rawSurf.midPoint;
+			surf.doubleSided = rawSurf.doubleSided;
 			surf.tex = am.loadTexture(am.getTextureRaw(rawSurf.tex));
 		}
 		

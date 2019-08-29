@@ -11,6 +11,7 @@ import org.joml.Vector3f;
 import org.rge.assets.AssetManager;
 import org.rge.assets.models.Model;
 import org.rge.assets.models.Model.RawData;
+import org.rge.assets.models.Model.RawData.RawSurface;
 import org.rge.assets.models.Model.RawData.Verts;
 import org.rge.graphics.Camera;
 import org.rge.graphics.light.AmbientLight;
@@ -42,11 +43,16 @@ public class Main {
 		
 		context.am.registerInputGen("dir", "Data");
 		
+		context.am.registerInputGen("dir", "ldraw");
+		context.am.registerInputGen("dir", "ldraw/models");
+		context.am.registerInputGen("dir", "ldraw/parts");
+		context.am.registerInputGen("dir", "ldraw/p");
+		
 		context.init();
 		context.setSize(1920, 1080);
 		context.window.center();
 		context.window.show();
-		context.setClearColor(Color.BLACK);
+		context.setClearColor(Color.DARK_GRAY);
 		
 //		Shader shader = null;
 //		try {
@@ -64,9 +70,12 @@ public class Main {
 		RawData lwoRaw = context.am.getModelRawData("lwo", "dock2.lwo");
 		RawData slugRaw = context.am.getModelRawData("lwo", "N_Slime.lwo");
 		
+		RawData ldr = context.am.getModelRawData("ldr", "docks.ldr");
+		
 		RawData modelData = new RawData();
+		modelData.shaderName = "color";
 		modelData.rawInds = new int[] { 0, 1, 2 };
-		modelData.verts = new Verts[1];
+		modelData.verts = new Verts[3];
 		Verts verts = new Verts();
 		verts.pos = 0;
 		verts.dimension = 3;
@@ -76,17 +85,45 @@ public class Main {
 				-1, 1, 0.5f
 		};
 		modelData.verts[0] = verts;
+		Verts vc = new Verts();
+		vc.pos = 1;
+		vc.dimension = 4;
+		vc.rawVerts = new float[] {
+				1, 0, 0, 1,
+				0, 1, 0, 1,
+				0, 0, 1, 1
+		};
+		modelData.verts[1] = vc;
 		
-		//Model m = new Model(context.am, modelData, false);
-		//m.shader = shader;
+		Verts vn = new Verts();
+		vn.pos = 2;
+		vn.dimension = 3;
+		vn.rawVerts = new float[] {
+				0, 0, -1,
+				0, 0, -1,
+				0, 0, -1
+		};
+		modelData.verts[2] = vn;
+		
+		RawSurface surf = new RawSurface();
+		surf.indLength = 3;
+		surf.indOffset = 0;
+		surf.doubleSided = true;
+		surf.isTranslucent = false;
+		modelData.surfaces = new RawSurface[] { surf };
+		
+		Model m = null;
 		
 //		Model teapotModel = null;
 		Model lwoModel = null;
 		Model slugModel = null;
+		Model ldrModel = null;
 		try {
 //			teapotModel = new Model(context.am, teapotRaw, false);
 			lwoModel = new Model(context.am, lwoRaw, false);
 			slugModel = new Model(context.am, slugRaw, false);
+			ldrModel = new Model(context.am, ldr, false);
+			m = new Model(context.am, modelData, false);
 		} catch (IOException e) {
 			System.out.println("Failed to get default shader");
 			e.printStackTrace();
@@ -116,8 +153,14 @@ public class Main {
 		};
 		root.subNodes.add(slugNode);
 		
+		DrawNode ldrNode = new DrawNode();
+		ldrNode.model = ldrModel;
+		
+		DrawNode origoTri = new DrawNode();
+		origoTri.model = m;
+		
 		LightGroup lights = new LightGroup();
-		lights.ambientLight = new AmbientLight(0.1f);
+		lights.ambientLight = new AmbientLight(0.5f);
 		
 		DirectionalLight dirLight = new DirectionalLight(new Vector3f(1, -1, 1), 0.1f);
 		dirLight.color = Color.YELLOW;
@@ -161,7 +204,9 @@ public class Main {
 			
 			context.tick();
 			
-			context.queueRender(root);
+//			context.queueRender(root);
+			context.queueRender(ldrNode);
+//			context.queueRender(origoTri);
 			
 			context.render();
 		}

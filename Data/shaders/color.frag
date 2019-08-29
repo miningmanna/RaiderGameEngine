@@ -2,7 +2,6 @@
 
 in vec3 mPos;
 in vec4 mColor;
-in vec2 mTPos;
 in vec3 mNormal;
 
 out vec4 color;
@@ -43,14 +42,7 @@ uniform SpotLight spotLights[4];
 
 void main() {
 	
-	vec4 surfColor;
-	if(useTex) {
-		surfColor = texture2D(tex, mTPos);
-		if(surfColor.w == 0)
-			discard;
-	} else {
-		surfColor = mColor;
-	}
+	vec4 surfColor = mColor;
 	
 	// --> Lighting here
 	
@@ -59,8 +51,6 @@ void main() {
 	
 	mat3 normalMatrix = transpose(mat3(transform));
 	vec3 normal = normalize(normalMatrix * mNormal);
-	
-	vec4 ambientRes = vec4(ambientLight.xyz*surfColor.xyz*ambientLight.w, surfColor.w);
 	
 	vec3 dirRes = vec3(0);
 	for(int i = 0; i < 4; i++) {
@@ -112,6 +102,8 @@ void main() {
 		
 		spotRes += k * spotLights[i].color * surfColor.xyz;
 	}
+	
+	vec4 ambientRes = vec4(ambientLight.xyz*surfColor.xyz*ambientLight.w, surfColor.w);
 	
 	color = ambientRes + vec4(dirRes, 0) + vec4(pointRes, 0) + vec4(spotRes, 0);
 }
