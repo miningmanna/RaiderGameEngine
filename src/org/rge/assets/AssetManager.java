@@ -16,6 +16,10 @@ import java.util.HashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.TwoArgFunction;
 import org.newdawn.slick.opengl.Texture;
 import org.rge.assets.io.InputGen;
 import org.rge.assets.models.Model;
@@ -23,8 +27,13 @@ import org.rge.assets.models.Model.RawData;
 import org.rge.graphics.Shader;
 import org.rge.loaders.ModelRawDataLoader;
 import org.rge.loaders.TextureRawLoader;
+import org.rge.lua.EngineObject;
+import org.rge.lua.EngineReference;
+import org.rge.node.DrawNode;
 
-public class AssetManager {
+public class AssetManager implements EngineObject {
+	
+	EngineReference engReference;
 	
 	private HashMap<String, Shader> shaders;
 	
@@ -190,6 +199,8 @@ public class AssetManager {
 	}
 	
 	public AssetManager() {
+		
+		initLuaTable();
 		
 		inputGens = new ArrayList<>();
 		shaders = new HashMap<>();
@@ -359,6 +370,30 @@ public class AssetManager {
 			return getTextureRaw(type, path);
 		else
 			return null;
+		
+	}
+	
+	@Override
+	public EngineReference getEngineReference() {
+		return engReference;
+	}
+	
+	private void initLuaTable() {
+		engReference = new EngineReference(this);
+		
+		engReference.set("registerInputGen", new TwoArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1) {
+				if(!(arg0 instanceof LuaString))
+					return null;
+				if(!(arg1 instanceof LuaString))
+					return null;
+				
+				registerInputGen(arg0.checkjstring(), arg1.checkjstring());
+				
+				return null;
+			}
+		});
 		
 	}
 	

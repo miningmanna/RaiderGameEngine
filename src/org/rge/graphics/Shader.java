@@ -15,14 +15,20 @@ import org.rge.graphics.light.DirectionalLight;
 import org.rge.graphics.light.LightGroup;
 import org.rge.graphics.light.PointLight;
 import org.rge.graphics.light.SpotLight;
+import org.rge.lua.EngineObject;
+import org.rge.lua.EngineReference;
 
-public class Shader {
+public class Shader implements EngineObject {
 	
 	// TODO: remember light uniform locations
+	
+	EngineReference engReference;
 	
 	private int program, vShader, fShader;
 	
 	public Shader(String vertShader, String fragShader) {
+		
+		initLuaTable();
 		
 		this.vShader = loadShader(vertShader, GL_VERTEX_SHADER);
 		this.fShader = loadShader(fragShader, GL_FRAGMENT_SHADER);
@@ -268,6 +274,18 @@ public class Shader {
 			setUniFloat(baseName + ".cutoff", light.cutoff);
 			
 		}
+		
+	}
+	
+	@Override
+	public EngineReference getEngineReference() {
+		return engReference;
+	}
+	
+	private void initLuaTable() {
+		engReference = new EngineReference(this);
+		
+		// TODO: Add uniform functions for lua
 		
 	}
 	

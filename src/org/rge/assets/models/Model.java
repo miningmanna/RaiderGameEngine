@@ -3,12 +3,19 @@ package org.rge.assets.models;
 import java.io.IOException;
 
 import org.joml.Vector3f;
+import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.OneArgFunction;
 import org.newdawn.slick.opengl.Texture;
 import org.rge.assets.AssetManager;
 import org.rge.assets.models.Model.RawData.RawSurface;
 import org.rge.graphics.Shader;
+import org.rge.lua.EngineObject;
+import org.rge.lua.EngineReference;
+import org.rge.node.DrawNode;
 
-public class Model {
+public class Model implements EngineObject {
+	
+	EngineReference engReference;
 	
 	AssetManager am;
 	
@@ -20,6 +27,8 @@ public class Model {
 	public int indCount;
 	
 	public Model(AssetManager am, RawData data, boolean keepData) throws IOException {
+		
+		initLuaTable();
 		
 		this.am = am;
 		raw = data;
@@ -147,4 +156,30 @@ public class Model {
 		}
 		
 	}
+	
+	@Override
+	public EngineReference getEngineReference() {
+		return engReference;
+	}
+	
+	private void initLuaTable() {
+		engReference = new EngineReference(this);
+		
+		engReference.set("setShader", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg) {
+				if(!(arg instanceof EngineReference))
+					return null;
+				EngineReference ref = (EngineReference) arg;
+				if(!(ref.parent instanceof Shader))
+					return null;
+				
+				shader = (Shader) ref.parent;
+				
+				return null;
+			}
+		});
+		
+	}
+	
 }

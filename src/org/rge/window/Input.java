@@ -1,13 +1,86 @@
 package org.rge.window;
 
 import org.joml.Vector4f;
+import org.luaj.vm2.LuaInteger;
+import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.OneArgFunction;
+import org.luaj.vm2.lib.ZeroArgFunction;
 import org.lwjgl.glfw.GLFWCursorPosCallbackI;
 import org.lwjgl.glfw.GLFWKeyCallbackI;
 import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
+import org.rge.lua.EngineObject;
+import org.rge.lua.EngineReference;
 
 import static org.lwjgl.glfw.GLFW.*;
 
-public class Input {
+import java.util.HashMap;
+
+public class Input implements EngineObject {
+	
+	EngineReference engReference;
+	
+	public static final int[] charMap = {
+			GLFW_KEY_0,
+			GLFW_KEY_1,
+			GLFW_KEY_2,
+			GLFW_KEY_3,
+			GLFW_KEY_4,
+			GLFW_KEY_5,
+			GLFW_KEY_6,
+			GLFW_KEY_7,
+			GLFW_KEY_8,
+			GLFW_KEY_9,
+			-1, -1, -1,
+			GLFW_KEY_EQUAL,
+			-1, -1, -1,
+			GLFW_KEY_A,
+			GLFW_KEY_B,
+			GLFW_KEY_C,
+			GLFW_KEY_D,
+			GLFW_KEY_E,
+			GLFW_KEY_F,
+			GLFW_KEY_G,
+			GLFW_KEY_H,
+			GLFW_KEY_I,
+			GLFW_KEY_J,
+			GLFW_KEY_K,
+			GLFW_KEY_L,
+			GLFW_KEY_M,
+			GLFW_KEY_N,
+			GLFW_KEY_O,
+			GLFW_KEY_P,
+			GLFW_KEY_Q,
+			GLFW_KEY_R,
+			GLFW_KEY_S,
+			GLFW_KEY_T,
+			GLFW_KEY_U,
+			GLFW_KEY_V,
+			GLFW_KEY_W,
+			GLFW_KEY_X,
+			GLFW_KEY_Y,
+			GLFW_KEY_Z
+	};
+	
+	public static final HashMap<String, Integer> specialMap = new HashMap<>();
+	{
+		specialMap.put("ESC",			GLFW_KEY_ESCAPE);
+		specialMap.put("SPACE", 		GLFW_KEY_SPACE);
+		specialMap.put("UP",			GLFW_KEY_UP);
+		specialMap.put("DOWN",			GLFW_KEY_DOWN);
+		specialMap.put("LEFT",			GLFW_KEY_LEFT);
+		specialMap.put("RIGHT",		GLFW_KEY_RIGHT);
+		specialMap.put("LEFT_SHIFT",	GLFW_KEY_LEFT_SHIFT);
+		specialMap.put("LEFT_CTRL",	GLFW_KEY_LEFT_CONTROL);
+	}
+	
+	public static final int[] mouseKeyMap = {
+			GLFW_MOUSE_BUTTON_LEFT,
+			GLFW_MOUSE_BUTTON_MIDDLE,
+			GLFW_MOUSE_BUTTON_RIGHT
+	};
+	
 	
 	public static final int HIGHEST_KEYCODE = 512;
 	public static final int HIGHEST_MOUSE_KEYCODE = 16;
@@ -30,6 +103,9 @@ public class Input {
 	private MouseClick msClck;
 	
 	public Input(Window par) {
+		
+		initLuaTable();
+		
 		kb = new Keyboard();
 		ms = new Mouse();
 		msClck = new MouseClick();
@@ -156,6 +232,172 @@ public class Input {
 		if(val > max)
 			return max;
 		return val;
+	}
+	
+	@Override
+	public EngineReference getEngineReference() {
+		return engReference;
+	}
+	
+	private static int getGLFWInt(String key) {
+		key = key.trim().toUpperCase();
+		
+		int glfwInt = -1;
+		
+		if(key.length() == 1) {
+			// CHARACTER KEY
+			char c = key.charAt(0);
+			int off = c-'0';
+			if(off < 0 || off >= charMap.length)
+				return -1;
+			
+			glfwInt = charMap[off];
+			
+		} else {
+			// SPECIAL KEY
+			if(specialMap.containsKey(key))
+				glfwInt = specialMap.get(key);
+		}
+		
+		return glfwInt;
+	}
+	
+	private void initLuaTable() {
+		engReference = new EngineReference(this);
+		
+		engReference.set("isDown", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(!(arg0 instanceof LuaString))
+					return null;
+				String key = arg0.checkjstring();
+				
+				int glfwInt = getGLFWInt(key);
+				if(glfwInt == -1)
+					return LuaValue.FALSE;
+				
+				if(isDown[glfwInt])
+					return LuaValue.TRUE;
+				return LuaValue.FALSE;
+			}
+		});
+		
+		engReference.set("justPressed", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(!(arg0 instanceof LuaString))
+					return null;
+				String key = arg0.checkjstring();
+				
+				int glfwInt = getGLFWInt(key);
+				if(glfwInt == -1)
+					return LuaValue.FALSE;
+				
+				if(justPressed[glfwInt])
+					return LuaValue.TRUE;
+				return LuaValue.FALSE;
+			}
+		});
+		
+		engReference.set("justReleased", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(!(arg0 instanceof LuaString))
+					return null;
+				String key = arg0.checkjstring();
+				
+				int glfwInt = getGLFWInt(key);
+				if(glfwInt == -1)
+					return LuaValue.FALSE;
+				
+				if(justReleased[glfwInt])
+					return LuaValue.TRUE;
+				return LuaValue.FALSE;
+			}
+		});
+		
+		engReference.set("mouseIsDown", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(!(arg0 instanceof LuaInteger))
+					return null;
+				
+				// TODO: merge with isDown function
+				
+				int key = arg0.checkint();
+				if(key < 0 || key >= mouseKeyMap.length)
+					return LuaValue.FALSE;
+				
+				if(mouseIsDown[key])
+					return LuaValue.TRUE;
+				return LuaValue.FALSE;
+			}
+		});
+		
+		engReference.set("mouseJustPressed", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(!(arg0 instanceof LuaInteger))
+					return null;
+				
+				// TODO: merge with justPressed function
+				
+				int key = arg0.checkint();
+				if(key < 0 || key >= mouseKeyMap.length)
+					return LuaValue.FALSE;
+				
+				if(mouseJustPressed[key])
+					return LuaValue.TRUE;
+				return LuaValue.FALSE;
+			}
+		});
+		
+		engReference.set("mouseJustReleased", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(!(arg0 instanceof LuaInteger))
+					return null;
+				
+				// TODO: merge with justReleased function
+				
+				int key = arg0.checkint();
+				if(key < 0 || key >= mouseKeyMap.length)
+					return LuaValue.FALSE;
+				
+				if(mouseJustReleased[key])
+					return LuaValue.TRUE;
+				return LuaValue.FALSE;
+			}
+		});
+		
+		engReference.set("getMouseX", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return LuaValue.valueOf(mouse.x);
+			}
+		});
+		
+		engReference.set("getMouseY", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return LuaValue.valueOf(mouse.y);
+			}
+		});
+		
+		engReference.set("getMouseDX", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return LuaValue.valueOf(mouse.z);
+			}
+		});
+		
+		engReference.set("getMouseDY", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return LuaValue.valueOf(mouse.w);
+			}
+		});
+		
 	}
 	
 }

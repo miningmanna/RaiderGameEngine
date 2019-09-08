@@ -6,4 +6,8 @@ public class EngineReference extends LuaTable {
 	
 	public Object parent;
 	
+	public EngineReference(Object parent) {
+		this.parent = parent;
+	}
+	
 }

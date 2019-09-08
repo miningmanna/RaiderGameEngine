@@ -86,7 +86,6 @@ public class Renderer {
 	
 	private void drawSurface(Surface surf) {
 		
-		
 		Model m = surf.par;
 		
 		m.shader.start();
