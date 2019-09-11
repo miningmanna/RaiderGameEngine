@@ -13,16 +13,21 @@ import org.rge.graphics.light.LightGroup;
 import org.rge.graphics.light.PointLight;
 import org.rge.graphics.light.SpotLight;
 import org.rge.lua.LuaEngine;
+import org.rge.lua.compat.LuaUtils;
+import org.rge.lua.compat.Vector3;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;
 import org.rge.node.DrawNode;
 import org.joml.Vector3f;
+import org.luaj.vm2.LuaDouble;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ThreeArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
+import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.lwjgl.opengl.GL;
 import org.rge.assets.AssetManager;
@@ -178,68 +183,78 @@ public class RGEContext implements EngineObject {
 		engReference.set("assets", am.getEngineReference());
 		engReference.set("input", window.input.getEngineReference());
 		
-		engReference.set("createDrawNode", new ZeroArgFunction() {
+		engReference.set("newVector3", new ThreeArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1, LuaValue arg2) {
+				if(!(arg0 instanceof LuaInteger || arg0 instanceof LuaDouble))
+					return new Vector3().getEngineReference();
+				if(!(arg1 instanceof LuaInteger || arg1 instanceof LuaDouble))
+					return new Vector3().getEngineReference();
+				if(!(arg2 instanceof LuaInteger || arg2 instanceof LuaDouble))
+					return new Vector3().getEngineReference();
+				return new Vector3((float) arg0.checkdouble(), (float) arg1.checkdouble(), (float) arg2.checkdouble()).getEngineReference();
+			}
+		});
+		engReference.set("newDrawNode", new ZeroArgFunction() {
 			@Override
 			public LuaValue call() {
 				return new DrawNode().getEngineReference();
 			}
 		});
-		
-		engReference.set("createCamera", new ZeroArgFunction() {
+		engReference.set("newCamera", new ZeroArgFunction() {
 			@Override
 			public LuaValue call() {
 				return new Camera().getEngineReference();
 			}
 		});
 		
-		engReference.set("createLightGroup", new ZeroArgFunction() {
+		engReference.set("newLightGroup", new ZeroArgFunction() {
 			@Override
 			public LuaValue call() {
 				return new LightGroup().getEngineReference();
 			}
 		});
 		
-		engReference.set("createAmbientLight", new ZeroArgFunction() {
+		engReference.set("newAmbientLight", new ZeroArgFunction() {
 			@Override
 			public LuaValue call() {
 				return new AmbientLight(0).getEngineReference();
 			}
 		});
 		
-		engReference.set("createPointLight", new ZeroArgFunction() {
+		engReference.set("newPointLight", new ZeroArgFunction() {
 			@Override
 			public LuaValue call() {
 				return new PointLight(new Vector3f(), 0).getEngineReference();
 			}
 		});
 		
-		engReference.set("createDirectionalLight", new ZeroArgFunction() {
+		engReference.set("newDirectionalLight", new ZeroArgFunction() {
 			@Override
 			public LuaValue call() {
 				return new DirectionalLight(new Vector3f(0, -1, 0), 0).getEngineReference();
 			}
 		});
 		
-		engReference.set("createSpotLight", new ZeroArgFunction() {
+		engReference.set("newSpotLight", new ZeroArgFunction() {
 			@Override
 			public LuaValue call() {
 				return new SpotLight(new Vector3f(), 0, 20).getEngineReference();
 			}
 		});
 		
-		engReference.set("setClearColor", new ThreeArgFunction() {
+		engReference.set("clearColor", new VarArgFunction() {
 			@Override
-			public LuaValue call(LuaValue arg0, LuaValue arg1, LuaValue arg2) {
-				if(!(arg0 instanceof LuaInteger))
-					return NIL;
-				if(!(arg1 instanceof LuaInteger))
-					return NIL;
-				if(!(arg2 instanceof LuaInteger))
-					return NIL;
+			public Varargs invoke(Varargs args) {
+				if(args.narg() != 3)
+					return LuaUtils.fromColor(clearColor);
+				for(int i = 0; i < 3; i++)
+					if(!(args.arg(1+i) instanceof LuaInteger))
+						return LuaUtils.fromColor(clearColor);
 				
-				setClearColor(new Color(arg0.checkint(), arg1.checkint(), arg2.checkint()));
+				setClearColor(new Color(args.arg(1).checkint(), args.arg(2).checkint(), args.arg(3).checkint()));
 				
-				return NIL;
+				return LuaUtils.fromColor(clearColor);
 			}
 		});
 		
@@ -265,44 +280,32 @@ public class RGEContext implements EngineObject {
 			}
 		});
 		
-		engReference.set("queueRender", new OneArgFunction() {
+		engReference.set("render", new OneArgFunction() {
 			@Override
 			public LuaValue call(LuaValue arg0) {
 				if(!(arg0 instanceof EngineReference))
-					return NIL;
+					return engReference;
 				EngineReference ref = (EngineReference) arg0;
 				if(!(ref.parent instanceof DrawNode))
-					return NIL;
+					return engReference;
 				
 				queueRender((DrawNode) ref.parent);
 				
-				return NIL;
+				return engReference;
 			}
 		});
 		
-		engReference.set("useCamera", new OneArgFunction() {
+		engReference.set("use", new OneArgFunction() {
 			@Override
 			public LuaValue call(LuaValue arg0) {
 				if(!(arg0 instanceof EngineReference))
-					return NIL;
+					return engReference;
 				EngineReference ref = (EngineReference) arg0;
-				if(!(ref.parent instanceof Camera))
-					return NIL;
-				useCamera((Camera) ref.parent);
-				return NIL;
-			}
-		});
-		
-		engReference.set("useLightGroup", new OneArgFunction() {
-			@Override
-			public LuaValue call(LuaValue arg0) {
-				if(!(arg0 instanceof EngineReference))
-					return NIL;
-				EngineReference ref = (EngineReference) arg0;
-				if(!(ref.parent instanceof LightGroup))
-					return NIL;
-				useLights((LightGroup) ref.parent);
-				return NIL;
+				if(ref.parent instanceof Camera)
+					useCamera((Camera) ref.parent);
+				else if(ref.parent instanceof LightGroup)
+					useLights((LightGroup) ref.parent);
+				return engReference;
 			}
 		});
 		

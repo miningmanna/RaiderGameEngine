@@ -30,7 +30,7 @@ camera.rotateVertical	(mouseSens * rge.input.getMouseDY())
 
 camera.update()
 
-rge.useCamera(camera)
-rge.useLightGroup(lights)
+rge.use(camera)
+rge.use(lights)
 
-rge.queueRender(rootNode)
+rge.render(rootNode)

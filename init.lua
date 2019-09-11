@@ -10,16 +10,25 @@ rge.window.setSize(1920, 1080)
 rge.window.center()
 rge.window.show()
 
-rootNode = rge.createDrawNode()
+rootNode = rge.newDrawNode()
 rootNode.setModel(rge.getModel("ldr", "car.ldr"))
 
-lights = rge.createLightGroup()
-camera = rge.createCamera()
+lights = rge.newLightGroup()
+camera = rge.newCamera()
 camera.setFrustrum(60.0, rge.window.getWidth()/rge.window.getHeight(), 0.1, 1000.0)
 
-rge.setClearColor(100, 100, 100)
+rge.clearColor(100, 100, 100)
 
-ambient = rge.createAmbientLight();
-ambient.setIntensity(0.2)
+dirVec = rge.newVector3()
+dirVec.y(-1)
+dirVec.z(1)
+directional = rge.newDirectionalLight()
+directional.direction(dirVec)
+directional.intensity(0.5)
+directional.color(255, 255, 255)
+
+ambient = rge.newAmbientLight()
+ambient.setIntensity(0.1)
 lights.addLight(ambient)
+lights.addLight(directional)
 
