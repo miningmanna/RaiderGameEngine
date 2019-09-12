@@ -17,7 +17,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.luaj.vm2.LuaString;
-import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.newdawn.slick.opengl.Texture;
@@ -29,7 +28,6 @@ import org.rge.loaders.ModelRawDataLoader;
 import org.rge.loaders.TextureRawLoader;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;
-import org.rge.node.DrawNode;
 
 public class AssetManager implements EngineObject {
 	

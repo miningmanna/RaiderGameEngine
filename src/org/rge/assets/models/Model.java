@@ -11,7 +11,6 @@ import org.rge.assets.models.Model.RawData.RawSurface;
 import org.rge.graphics.Shader;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;
-import org.rge.node.DrawNode;
 
 public class Model implements EngineObject {
 	
@@ -165,18 +164,18 @@ public class Model implements EngineObject {
 	private void initLuaTable() {
 		engReference = new EngineReference(this);
 		
-		engReference.set("setShader", new OneArgFunction() {
+		engReference.set("shader", new OneArgFunction() {
 			@Override
 			public LuaValue call(LuaValue arg) {
 				if(!(arg instanceof EngineReference))
-					return null;
+					return getEngineReference();
 				EngineReference ref = (EngineReference) arg;
 				if(!(ref.parent instanceof Shader))
-					return null;
+					return getEngineReference();
 				
 				shader = (Shader) ref.parent;
 				
-				return null;
+				return getEngineReference();
 			}
 		});
 		

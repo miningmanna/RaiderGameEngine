@@ -3,7 +3,6 @@ package org.rge.window;
 import org.joml.Vector4f;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
-import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;

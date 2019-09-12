@@ -68,16 +68,6 @@ public class RGEContext implements EngineObject {
 			tickSciptPath = path;
 	}
 	
-	private static void printFullStack(Throwable t) {
-		for(StackTraceElement elem : t.getStackTrace())
-			System.err.println("at " + elem.getClassName() + "." + elem.getMethodName() + "(" + elem.getFileName() + ":" + elem.getLineNumber() + ")");
-		if(t.getCause() != null) {
-			Throwable cause = t.getCause();
-			System.err.println("Casued by: " + cause + " " + cause.getMessage() + " FULL:");
-			printFullStack(cause);
-		}
-	}
-	
 	public void init() {
 		
 		window = new Window("RGE engine");

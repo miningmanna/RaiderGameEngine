@@ -55,6 +55,13 @@ public class LightGroup implements EngineObject {
 		return -1;
 	}
 	
+	private <T> int getPos(Object o, T[] a) {
+		for(int i = 0; i < a.length; i++)
+			if(a[i] == o)
+				return i;
+		return -1;
+	}
+	
 	@Override
 	public EngineReference getEngineReference() {
 		return engReference;
@@ -63,11 +70,11 @@ public class LightGroup implements EngineObject {
 	private void initLuaTable() {
 		engReference = new EngineReference(this);
 		
-		engReference.set("addLight", new OneArgFunction() {
+		engReference.set("add", new OneArgFunction() {
 			@Override
 			public LuaValue call(LuaValue arg0) {
 				if(!(arg0 instanceof EngineReference))
-					return null;
+					return getEngineReference();
 				EngineReference ref = (EngineReference) arg0;
 				if(ref.parent instanceof AmbientLight) {
 					setAmbient((AmbientLight) ref.parent);
@@ -78,7 +85,37 @@ public class LightGroup implements EngineObject {
 				} else if(ref.parent instanceof SpotLight) {
 					addLight((SpotLight) ref.parent);
 				}
-				return null;
+				return getEngineReference();
+			}
+		});
+		
+		engReference.set("remove", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(!(arg0 instanceof EngineReference))
+					return getEngineReference();
+				EngineReference ref = (EngineReference) arg0;
+				
+				if(ref.parent == ambientLight) {
+					ambientLight = null;
+					return getEngineReference();
+				}
+				int i = getPos(ref.parent, pointLights);
+				if(i != -1) {
+					pointLights[i] = null;
+					return getEngineReference();
+				}
+				i = getPos(ref.parent, directionalLights);
+				if(i != -1) {
+					directionalLights[i] = null;
+					return getEngineReference();
+				}
+				i = getPos(ref.parent, spotLights);
+				if(i != -1) {
+					spotLights[i] = null;
+					return getEngineReference();
+				}
+				return getEngineReference();
 			}
 		});
 		

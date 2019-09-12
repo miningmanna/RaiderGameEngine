@@ -8,7 +8,6 @@ import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.OneArgFunction;
-import org.luaj.vm2.lib.ThreeArgFunction;
 import org.luaj.vm2.lib.VarArgFunction;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;

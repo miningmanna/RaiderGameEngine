@@ -16,7 +16,15 @@ public class Move {
 	}
 	
 	public void advance(float dt) {
-		this.time += dt;
+		this.setTime(this.getTime() + dt);
+	}
+	
+	public float getTime() {
+		return time;
+	}
+	
+	public void setTime(float time) {
+		this.time = time;
 	}
 	
 }

@@ -10,7 +10,6 @@ import java.nio.IntBuffer;
 
 import org.luaj.vm2.LuaBoolean;
 import org.luaj.vm2.LuaInteger;
-import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
