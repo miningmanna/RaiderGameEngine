@@ -28,7 +28,7 @@ directional.intensity(0.5)
 directional.color(255, 255, 255)
 
 ambient = rge.newAmbientLight()
-ambient.setIntensity(0.1)
-lights.addLight(ambient)
-lights.addLight(directional)
+ambient.intensity(0.1)
+lights.add(ambient)
+lights.add(directional)
 
