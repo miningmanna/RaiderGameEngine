@@ -2,6 +2,9 @@
 # Ignore Asset folder
 Data/
 
+# Readd shaders
+\!Data/shaders/
+
 # Ignore ldraw library
 ldraw/
 
