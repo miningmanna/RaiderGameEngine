@@ -1,0 +1,12 @@
+
+# Ignore Asset folder
+Data/
+
+# Ignore ldraw library
+ldraw/
+
+# Ignore bin
+bin/
+
+# Ignore eclipse settings
+.settings/
