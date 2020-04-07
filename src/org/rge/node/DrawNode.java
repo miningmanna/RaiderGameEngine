@@ -9,7 +9,6 @@ import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
-import org.rge.assets.models.Model;
 import org.rge.graphics.Renderable;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;

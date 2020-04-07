@@ -7,11 +7,9 @@ import java.util.HashMap;
 
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
-import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ThreeArgFunction;
-import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.rge.assets.AssetManager;
 import org.rge.assets.models.Texture;
