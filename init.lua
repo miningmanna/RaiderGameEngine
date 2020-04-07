@@ -213,6 +213,5 @@ function update(dt)
 
 end
 
--- Register 'update' as event handler for update event
 rge.registerEvent("update", update);
 
