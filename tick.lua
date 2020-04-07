@@ -33,4 +33,6 @@ camera.update()
 rge.use(camera)
 rge.use(lights)
 
+rootNode.advance(1/60)
 rge.render(rootNode)
+rge.render(tileMapNode)

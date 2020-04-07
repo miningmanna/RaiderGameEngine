@@ -176,8 +176,34 @@ public class Camera implements EngineObject {
 				return NIL;
 			}
 		});
-			
 		
+		engReference.set("setOrtho", new VarArgFunction() {
+			@Override
+			public Varargs invoke(Varargs vargs) {
+				System.out.println("Setting frustrum");
+				System.out.println(vargs.narg());
+				if(vargs.narg() != 6)
+					return NIL;
+				for(int i = 0; i < 6; i++) {
+					System.out.println(vargs.arg(i+1).getClass() + ": " + vargs.arg(i+1).checkdouble());
+					if(!(vargs.arg(i+1) instanceof LuaDouble || vargs.arg(i+1) instanceof LuaInteger))
+						return NIL;
+				}
+				
+				System.out.println("Doing it!");
+				
+				setOrtho(
+						(float) vargs.arg(1).checkdouble(),
+						(float) vargs.arg(2).checkdouble(),
+						(float) vargs.arg(3).checkdouble(),
+						(float) vargs.arg(4).checkdouble(),
+						(float) vargs.arg(5).checkdouble(),
+						(float) vargs.arg(6).checkdouble()
+				);
+				
+				return NIL;
+			}
+		});
 	}
 	
 }

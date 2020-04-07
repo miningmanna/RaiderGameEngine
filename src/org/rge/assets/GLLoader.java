@@ -12,10 +12,9 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 
 import org.lwjgl.BufferUtils;
-import org.newdawn.slick.opengl.Texture;
 import org.rge.assets.models.Model;
-import org.rge.assets.models.Model.RawData.Verts;
-import org.rge.assets.MTexture;
+import org.rge.assets.models.Verts;
+import org.rge.assets.models.tilemap.TileMap;
 
 public class GLLoader {
 	
@@ -39,7 +38,7 @@ public class GLLoader {
 		
 		for(int i = 0; i < model.raw.verts.length; i++) {
 			model.usedVBOs[i] = model.raw.verts[i].pos;
-			loadVertsIntoVBO(model.raw.verts[i]);
+			loadVertsIntoVBO(model.raw.verts[i], GL_STATIC_DRAW);
 		}
 		
 		int indVbo = glGenBuffers();
@@ -56,23 +55,17 @@ public class GLLoader {
 		
 	}
 	
-	public int loadVertsIntoVBO(Verts verts) {
+	private int loadVertsIntoVBO(Verts verts, int mode) {
 		
 		int vbo = glGenBuffers();
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		vbos.add(vbo);
 		
-		for(int i = 0; i < verts.rawVerts.length/verts.dimension; i++) {
-			for(int j = 0; j < verts.dimension; j++)
-				System.out.print(verts.rawVerts[i*verts.dimension + j] + " ");
-			System.out.println();
-		}
-		System.out.println("-------------------");
 		FloatBuffer buff = BufferUtils.createFloatBuffer(verts.rawVerts.length);
 		buff.put(verts.rawVerts);
 		buff.flip();
 		
-		glBufferData(GL_ARRAY_BUFFER, buff, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, buff, mode);
 		glVertexAttribPointer(verts.pos, verts.dimension, GL_FLOAT, false, 0, 0);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -80,13 +73,7 @@ public class GLLoader {
 		
 	}
 	
-	public Texture loadTexture(BufferedImage img) {
-		
-		return getTexture(img);
-		
-	}
-	
-	public Texture getTexture(BufferedImage img) {
+	public int loadTexture(BufferedImage img) {
 		
 		int id = glGenTextures();
 		glBindTexture(GL_TEXTURE_2D, id);
@@ -113,7 +100,45 @@ public class GLLoader {
 		glBindTexture(GL_TEXTURE_2D, 0);
 		
 		texsIds.add(id);
-		return new MTexture(id);
+		return id;
+	}
+	
+	public void changeTiles(int... tile) {
+		
+		// TODO: load changed vertices to GPU
+		
+	}
+	
+	public void loadTileMap(TileMap tileMap) {
+		
+		tileMap.vao = glGenVertexArrays();
+		vaos.add(tileMap.vao);
+		glBindVertexArray(tileMap.vao);
+		
+		tileMap.usedVBOs = new int[tileMap.verts.length];
+		
+		for(int i = 0; i < tileMap.verts.length; i++) {
+			tileMap.usedVBOs[i] = tileMap.verts[i].pos;
+			loadVertsIntoVBO(tileMap.verts[i], GL_DYNAMIC_DRAW);
+		}
+		
+		int[] indices = new int[tileMap.width * tileMap.height * 4 * 3]; // For each tile -> 4 triangles -> 3 indices per triangle
+		for(int x = 0; x < tileMap.width; x++)
+			for(int y = 0; y < tileMap.height; y++) // For each tile
+				for(int i = 0; i < 4; i++) // In each triangle
+					for(int j = 0; j < 3; j++) // determine value for the index at current index
+						indices[(((x*tileMap.height)+y)*4 + i)*3 + j] = j == 2 ? (x*tileMap.height+y)*5 + 4: (x*tileMap.height+y)*5 + (i+j)%4;
+		
+		int indVbo = glGenBuffers();
+		vbos.add(indVbo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indVbo);
+		IntBuffer intBuff = BufferUtils.createIntBuffer(indices.length);
+		intBuff.put(indices);
+		intBuff.flip();
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, intBuff, GL_STATIC_READ);
+		
+		glBindVertexArray(0);
+		
 	}
 	
 	public void destroy() {
@@ -126,6 +151,5 @@ public class GLLoader {
 			glDeleteVertexArrays(vao);
 		
 	}
-	
 	
 }

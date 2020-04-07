@@ -9,8 +9,6 @@ import java.util.Comparator;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.rge.assets.models.Model;
-import org.rge.assets.models.Model.Surface;
 import org.rge.graphics.light.LightGroup;
 import org.rge.node.DrawNode;
 
@@ -68,7 +66,7 @@ public class Renderer {
 			translucentBatch.lights = group;
 			translucentBatch.transform = transform;
 			
-			for(Surface s : node.model.surfs) {
+			for(Surface s : node.model.getSurfs()) {
 				if(s.isTranslucent)
 					translucentBatch.toDraw.add(s);
 				else
@@ -86,12 +84,15 @@ public class Renderer {
 	
 	private void drawSurface(Surface surf) {
 		
-		Model m = surf.par;
+		Renderable m = surf.par;
+		Shader shader = m.getShader();
+		int vao = m.getVAO();
+		int[] usedVBOs = m.getUsedVBOs();
 		
-		m.shader.start();
+		shader.start();
 		
-		glBindVertexArray(m.vao);
-		for(int vbo : m.usedVBOs)
+		glBindVertexArray(vao);
+		for(int vbo : usedVBOs)
 			glEnableVertexAttribArray(vbo);
 		
 		glActiveTexture(GL_TEXTURE0);
@@ -106,12 +107,12 @@ public class Renderer {
 			glBlendFunc(GL_ONE, GL_ONE);
 		
 		if(surf.tex != null) {
-			surf.tex.bind();
+			glBindTexture(GL_TEXTURE_2D, surf.tex.getCurTexId());
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			m.shader.setUniBoolean("useTex", true);
+			shader.setUniBoolean("useTex", true);
 		} else {
-			m.shader.setUniBoolean("useTex", false);
+			shader.setUniBoolean("useTex", false);
 		}
 		
 		glDrawElements(GL_TRIANGLES, surf.indLength, GL_UNSIGNED_INT, surf.indOffset*4);
@@ -125,10 +126,10 @@ public class Renderer {
 		if(surf.additiveColor)
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		
-		for(int vbo : m.usedVBOs)
+		for(int vbo : usedVBOs)
 			glDisableVertexAttribArray(vbo);
 		glBindVertexArray(0);
-		m.shader.stop();
+		shader.stop();
 		
 	}
 	
@@ -141,7 +142,7 @@ public class Renderer {
 			if(batch.toDraw.isEmpty())
 				continue;
 			
-			Shader batchShader = batch.toDraw.get(0).par.shader;
+			Shader batchShader = batch.toDraw.get(0).par.getShader();
 			batchShader.start();
 			batchShader.setCamera(batch.camera);
 			batchShader.setTransform(batch.transform);
@@ -188,7 +189,7 @@ public class Renderer {
 			DrawBatch batch = item.batch;
 			Surface surf = item.surf;
 			
-			Shader batchShader = batch.toDraw.get(0).par.shader;
+			Shader batchShader = batch.toDraw.get(0).par.getShader();
 			batchShader.start();
 			batchShader.setCamera(batch.camera);
 			batchShader.setTransform(batch.transform);

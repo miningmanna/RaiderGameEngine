@@ -5,14 +5,16 @@ import java.io.IOException;
 import org.joml.Vector3f;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
-import org.newdawn.slick.opengl.Texture;
 import org.rge.assets.AssetManager;
 import org.rge.assets.models.Model.RawData.RawSurface;
+import org.rge.assets.models.Texture.TextureRawInfo;
+import org.rge.graphics.Renderable;
 import org.rge.graphics.Shader;
+import org.rge.graphics.Surface;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;
 
-public class Model implements EngineObject {
+public class Model implements EngineObject, Renderable {
 	
 	EngineReference engReference;
 	
@@ -48,7 +50,7 @@ public class Model implements EngineObject {
 			surf.additiveColor = rawSurf.additiveColor;
 			surf.midPoint = rawSurf.midPoint;
 			surf.doubleSided = rawSurf.doubleSided;
-			surf.tex = am.loadTexture(am.getTextureRaw(rawSurf.tex));
+			surf.tex = am.loadTexture(rawSurf.tex);
 		}
 		
 		if(!keepData)
@@ -64,17 +66,11 @@ public class Model implements EngineObject {
 		}
 	}
 	
-	public static class Surface {
-		
-		public Model par;
-		public int indOffset;
-		public int indLength;
-		public Texture tex;
-		public boolean isTranslucent;
-		public boolean additiveColor;
-		public boolean doubleSided;
-		public Vector3f midPoint;
-		
+	public void advance(float dt) {
+		for(int i = 0; i < surfs.length; i++)
+			if(surfs[i].tex != null)
+				if(surfs[i].tex.animated)
+					surfs[i].tex.advance(dt);
 	}
 	
 	public static class RawData {
@@ -88,69 +84,11 @@ public class Model implements EngineObject {
 			
 			public int indOffset;
 			public int indLength;
-			public String tex;
+			public TextureRawInfo tex;
 			public boolean isTranslucent;
 			public boolean additiveColor;
 			public boolean doubleSided;
 			public Vector3f midPoint;
-			
-		}
-		
-		public static class Verts {
-			
-			public int pos;
-			public int dimension;
-			public float[] rawVerts;
-			
-			public void flip(int component) {
-				scale(component, -1);
-			}
-			
-			public void scale(int component, float s) {
-				if(component < 0 || component >= dimension)
-					return;
-				for(int i = component; i < rawVerts.length; i += dimension)
-					rawVerts[i] *= s;
-			}
-			
-			public void scale(float... scales) {
-				for(int i = 0; i < scales.length && i < dimension; i++)
-					for(int j = i; j < rawVerts.length; j += dimension)
-						rawVerts[j] *= scales[i];
-			}
-			
-			public void scaleAll(float scale) {
-				for(int i = 0; i < rawVerts.length; i++)
-					rawVerts[i] *= scale;
-			}
-			
-			public void add(int component, float val) {
-				if(component < 0 || component >= dimension)
-					return;
-				for(int i = component; i < rawVerts.length; i += dimension)
-					rawVerts[i] += val;
-			}
-			
-			public void add(float... vals) {
-				for(int i = 0; i < vals.length && i < dimension; i++)
-					for(int j = i; j < rawVerts.length; j += dimension)
-						rawVerts[j] += vals[i];
-			}
-			
-			public void addAll(float val) {
-				for(int i = 0; i < rawVerts.length; i++)
-					rawVerts[i] += val;
-			}
-			
-			public void switchComponents(int comp1, int comp2) {
-				if(comp1 < 0 || comp1 >= dimension || comp2 < 0 || comp2 >= dimension)
-					return;
-				for(int i = 0; i < Math.floorDiv(rawVerts.length, dimension); i++) {
-					float temp = rawVerts[i*dimension+comp1];
-					rawVerts[i*dimension+comp1] = rawVerts[i*dimension+comp2];
-					rawVerts[i*dimension+comp2] = temp;
-				}
-			}
 			
 		}
 		
@@ -179,6 +117,26 @@ public class Model implements EngineObject {
 			}
 		});
 		
+	}
+
+	@Override
+	public int getVAO() {
+		return vao;
+	}
+
+	@Override
+	public Shader getShader() {
+		return shader;
+	}
+
+	@Override
+	public int[] getUsedVBOs() {
+		return usedVBOs;
+	}
+
+	@Override
+	public Surface[] getSurfs() {
+		return surfs;
 	}
 	
 }

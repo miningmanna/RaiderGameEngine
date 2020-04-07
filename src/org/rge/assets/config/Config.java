@@ -146,6 +146,15 @@ public class Config implements EngineObject {
 				set(path, value);
 		}
 		
+		public void setSubNode(String path, ConfigNode node) {
+			if(path == null)
+				return;
+			if(node == null)
+				set(path, NIL);
+			else
+				set(path, node);
+		}
+		
 	}
 	
 	@Override

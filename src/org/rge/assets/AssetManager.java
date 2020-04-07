@@ -18,14 +18,14 @@ import java.util.jar.JarFile;
 
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.TwoArgFunction;
-import org.newdawn.slick.opengl.Texture;
+import org.luaj.vm2.lib.OneArgFunction;
+import org.rge.assets.config.Config;
 import org.rge.assets.io.InputGen;
 import org.rge.assets.models.Model;
 import org.rge.assets.models.Model.RawData;
+import org.rge.assets.models.Texture;
+import org.rge.assets.models.Texture.TextureRawInfo;
 import org.rge.graphics.Shader;
-import org.rge.loaders.ModelRawDataLoader;
-import org.rge.loaders.TextureRawLoader;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;
 
@@ -38,15 +38,13 @@ public class AssetManager implements EngineObject {
 	private GLLoader glLoader;
 	
 	private ArrayList<InputGen> inputGens;
-	private HashMap<String, ModelRawDataLoader> modelRawDataLoaders;
-	private HashMap<String, TextureRawLoader> textureRawLoaders;
+	private HashMap<LoaderTAR, Loader> loadersTAR;
+	private HashMap<Class<?>, ArrayList<Loader>> loadersC;
 	
 	private static HashMap<String, ClassContainer> inputGenClasses = new HashMap<>();
-	private static HashMap<String, ClassContainer> modelRawDataLoaderClasses = new HashMap<>();
-	private static HashMap<String, ClassContainer> textureRawLoaderClasses = new HashMap<>();
-	public static void registerClass(String type, HashMap<String, ClassContainer> map, Class<?> genClass) {
-		
-		type = type.toUpperCase();
+	private static HashMap<LoaderTAR, ClassContainer> loaderClasses = new HashMap<>();
+	
+	public static <T> void registerClass(T type, HashMap<T, ClassContainer> map, Class<?> genClass) {
 		
 		ClassContainer container = new ClassContainer();
 		container.mClass = genClass;
@@ -112,64 +110,48 @@ public class AssetManager implements EngineObject {
 							}
 						}
 						if(typeValue != null) {
+							typeValue = typeValue.toUpperCase();
 							registerClass(typeValue, inputGenClasses, mClass);
 							continue;
 						}
 					}
 					
-					// TODO: implement for loader interfaces
-					
-					if(t.getTypeName().equals("org.rge.loaders.ModelRawDataLoader")) {
-						System.out.println("Found ModelRawDataLoader class! " + mClass);
-						String[] typeValues = null;
+					if(t.getTypeName().equals("org.rge.assets.Loader")) {
 						
+						String[] typeValues = null;
 						int wishedModifiers = 0 | Modifier.PUBLIC | Modifier.STATIC | Modifier.FINAL;
 						Field[] fields = mClass.getDeclaredFields();
 						for(Field f : fields) {
 							if(	f.getModifiers() == wishedModifiers &&
 								f.getType() == String[].class &&
-								f.getName().equals("MODELRAWDATALOADER_TYPES")) {
+								f.getName().equals("LOADER_TYPES")) {
 								typeValues = (String[]) f.get(null);
 								break;
 							}
 						}
-						System.out.println("TYPE_VALUES: " + typeValues);
-						if(typeValues != null) {
-							for(String loaderType : typeValues) {
-								loaderType = loaderType.toUpperCase();
-								System.out.println("Registering ModelRawDataLoader type: " + loaderType + " for class " + mClass);
-								registerClass(loaderType, modelRawDataLoaderClasses, mClass);
-							}
-							continue;
-						}
 						
-					}
-					if(t.getTypeName().equals("org.rge.loaders.TextureRawLoader")) {
-						System.out.println("Found TextureRawLoader class! " + mClass);
-						String[] typeValues = null;
-						
-						int wishedModifiers = 0 | Modifier.PUBLIC | Modifier.STATIC | Modifier.FINAL;
-						Field[] fields = mClass.getDeclaredFields();
+						Class<?>[] returnValues = null;
+						wishedModifiers = 0 | Modifier.PUBLIC | Modifier.STATIC | Modifier.FINAL;
 						for(Field f : fields) {
 							if(	f.getModifiers() == wishedModifiers &&
-								f.getType() == String[].class &&
-								f.getName().equals("TEXTURERAWLOADER_TYPES")) {
-								typeValues = (String[]) f.get(null);
+								f.getType() == Class[].class &&
+								f.getName().equals("LOADER_RETURN_TYPES")) {
+								returnValues = (Class[]) f.get(null);
 								break;
 							}
 						}
-						System.out.println("TYPE_VALUES: " + typeValues);
-						if(typeValues != null) {
-							for(String loaderType : typeValues) {
-								loaderType = loaderType.toUpperCase();
-								System.out.println("Registering TextureRawLoader type: " + loaderType + " for class " + mClass);
-								registerClass(loaderType, textureRawLoaderClasses, mClass);
-							}
+						if(typeValues == null || returnValues == null)
 							continue;
+						if(typeValues.length != returnValues.length)
+							continue;
+						
+						for(int i = 0; i < typeValues.length; i++) {
+							String loaderType = typeValues[i].toUpperCase();
+							LoaderTAR key = new LoaderTAR(loaderType, returnValues[i]);
+							registerClass(key, loaderClasses, mClass);
 						}
 						
 					}
-					
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -185,7 +167,7 @@ public class AssetManager implements EngineObject {
 	private static class ClassContainer {
 		public int constructorIndex;
 		public Class<?> mClass;
-		public Object constructInputGen() {
+		public Object constructInstance() {
 			try {
 				return mClass.getConstructors()[constructorIndex].newInstance();
 			} catch (Exception e) {
@@ -193,6 +175,28 @@ public class AssetManager implements EngineObject {
 				e.printStackTrace();
 			}
 			return null;
+		}
+	}
+	
+	private static class LoaderTAR {
+		String type;
+		Class<?> returnType;
+		public LoaderTAR(String type, Class<?> returnType) {
+			this.type = type;
+			this.returnType = returnType;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if(obj == null) return false;
+			if(this == obj) return true;
+			if(!(obj instanceof LoaderTAR))
+				return false;
+			LoaderTAR key = (LoaderTAR) obj;
+			return key.type.equals(type) && (key.returnType == returnType);
+		}
+		@Override
+		public int hashCode() {
+			return (type.hashCode() + returnType.hashCode());
 		}
 	}
 	
@@ -204,24 +208,45 @@ public class AssetManager implements EngineObject {
 		shaders = new HashMap<>();
 		glLoader = new GLLoader();
 		
-		modelRawDataLoaders = new HashMap<>();
-		for(String key : modelRawDataLoaderClasses.keySet()) {
-			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ " + key);
-			ModelRawDataLoader loader = (ModelRawDataLoader) modelRawDataLoaderClasses.get(key).constructInputGen();
+		loadersTAR = new HashMap<>();
+		loadersC = new HashMap<>();
+		for(LoaderTAR key : loaderClasses.keySet()) {
+			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ " + key.type + " " + key.returnType.getCanonicalName());
+			Loader loader = (Loader) loaderClasses.get(key).constructInstance();
 			System.out.println("Constructing a new loader instane for type: " + key + " " + loader);
-			loader.init();
-			modelRawDataLoaders.put(key, loader);
+			loader.init(this);
+			loadersTAR.put(key, loader);
+			ArrayList<Loader> list = loadersC.get(key.returnType);
+			if(list == null) {
+				list = new ArrayList<>();
+				loadersC.put(key.returnType, list);
+			}
+			list.add(loader);
 		}
 		
-		textureRawLoaders = new HashMap<>();
-		for(String key : textureRawLoaderClasses.keySet()) {
-			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ " + key);
-			TextureRawLoader loader = (TextureRawLoader) textureRawLoaderClasses.get(key).constructInputGen();
-			System.out.println("Constructing a new loader instane for type: " + key + " " + loader);
-			loader.init();
-			textureRawLoaders.put(key, loader);
-		}
+	}
+	
+	public Object getWithClass(String path, Class<?> rClass) {
+		if(rClass == null || path == null)
+			return null;
 		
+		ArrayList<Loader> loaders = loadersC.get(rClass);
+		if(loaders == null)
+			return null;
+		
+		Loader loader = null;
+		for(Loader l : loaders) {
+			if(l.canRead(path)) {
+				loader = l;
+				break;
+			}
+		}
+		Object res = loader.get(path, this);
+		if(res == null)
+			return null;
+		if(res.getClass() != rClass)
+			return null;
+		return res;
 	}
 	
 	public void loadModel(Model model) {
@@ -235,24 +260,111 @@ public class AssetManager implements EngineObject {
 	public Texture loadTexture(BufferedImage img) {
 		if(img == null)
 			return null;
-		return glLoader.loadTexture(img);
 		
+		Texture res = new Texture();
+		res.animated = false;
+		res.runlen = 1;
+		res.texIds = new int[] { glLoader.loadTexture(img) };
+		
+		return res;
+	}
+	
+	public Texture loadTexture(TextureRawInfo info) {
+		if(info == null)
+			return null;
+		
+		Texture res = new Texture();
+		int len = 0;
+		if(info.animated)
+			len = (info.files.length > info.times.length ? info.files.length : info.times.length);
+		else
+			len = 1;
+		
+		res.animated = info.animated;
+		res.runlen = info.runlen;
+		
+		res.texIds = new int[len];
+		for(int i = 0; i < len; i++) {
+			BufferedImage img = getTextureRaw(info.files[i]);
+			if(img == null)
+				res.texIds[i] = -1;
+			else
+				res.texIds[i] = glLoader.loadTexture(img);
+		}
+		
+		if(res.animated) {
+			res.times = new float[len];
+			System.arraycopy(info.times, 0, res.times, 0, len);
+		}
+		
+		return res;
+	}
+	
+	public Object getValueOfSub(String path, Class<?>... classes) {
+		if(path == null)
+			return null;
+		if(classes == null)
+			return null;
+		
+		path = sanitizeAssetPath(path);
+		
+		LoaderTAR mKey = null;
+		for(LoaderTAR key : loadersTAR.keySet()) {
+			if(isSubOfAny(key.returnType, classes) && loadersTAR.get(key).canRead(path)) {
+				mKey = key;
+				break;
+			}
+		}
+		if(mKey != null)
+			return loadersTAR.get(mKey).get(path, this);
+		return null;
+	}
+	
+	private static boolean isSubOfAny(Class<?> t, Class<?>[] ta) {
+		for(int i = 0; i < ta.length; i++) {
+			if(ta[i].isAssignableFrom(t))
+				return true;
+		}
+		return false;
 	}
 	
 	public RawData getModelRawData(String type, String path) {
 		if(type == null || path == null)
 			return null;
+		path = sanitizeAssetPath(path);
 		type = type.toUpperCase();
+		LoaderTAR key = new LoaderTAR(type, RawData.class);
 		
-		ModelRawDataLoader loader = modelRawDataLoaders.get(type);
-		System.out.println("Getting modelLoader: " + loader);
+		Loader loader = loadersTAR.get(key);
 		if(loader == null)
 			return null;
 		
-		RawData res = loader.getModelRawData(path, this);
-		System.out.println("Loader returned RawData: " + res);
+		return (RawData) loader.get(path, this);
+	}
+	
+	public BufferedImage getTextureRaw(String type, String path) {
+		if(type == null || path == null)
+			return null;
+		type = type.toUpperCase();
+		LoaderTAR key = new LoaderTAR(type, BufferedImage.class);
 		
-		return res;
+		Loader loader = loadersTAR.get(key);
+		if(loader == null)
+			return null;
+		
+		return (BufferedImage) loader.get(path, this);
+	}
+	
+	public Config getConfig(String type, String path) {
+		if(type == null || path == null)
+			return null;
+		type = type.toUpperCase();
+		LoaderTAR key = new LoaderTAR(type, Config.class);
+		
+		Loader loader = loadersTAR.get(key);
+		if(loader == null)
+			return null;
+		return (Config) loader.get(path, this);
 	}
 	
 	public void registerInputGen(String type, String path) {
@@ -264,10 +376,19 @@ public class AssetManager implements EngineObject {
 		if(container == null)
 			return;
 		
-		InputGen inputGen = (InputGen) container.constructInputGen();
-		inputGen.init(path);
-		inputGens.add(inputGen);
-		
+		InputGen inputGen = (InputGen) container.constructInstance();
+		boolean succes = inputGen.init(path);
+		if(succes)
+			inputGens.add(inputGen);
+		else
+			inputGen.destroy();
+	}
+	
+	public boolean exists(String path) {
+		for(InputGen gen : inputGens)
+			if(gen.exists(path))
+				return true;
+		return false;
 	}
 	
 	public InputStream getAsset(String path) {
@@ -338,37 +459,16 @@ public class AssetManager implements EngineObject {
 		return str.toString();
 	}
 	
-	public BufferedImage getTextureRaw(String type, String path) {
-		if(type == null || path == null)
-			return null;
-		type = type.toUpperCase();
-		
-		TextureRawLoader loader = textureRawLoaders.get(type);
-		System.out.println("Getting modelLoader: " + loader);
-		if(loader == null)
-			return null;
-		
-		BufferedImage res = loader.getRawImage(path, this);
-		System.out.println("Loader returned raw Image: " + res);
-		
-		return res;
+	public RawData getModelRawData(String path) {
+		return (RawData) getWithClass(path, RawData.class);
 	}
 	
 	public BufferedImage getTextureRaw(String path) {
-		if(path == null)
-			return null;
-		String type = null;
-		for(String key : textureRawLoaders.keySet()) {
-			if(textureRawLoaders.get(key).canRead(path)) {
-				type = key;
-				break;
-			}
-		}
-		if(type != null)
-			return getTextureRaw(type, path);
-		else
-			return null;
-		
+		return (BufferedImage) getWithClass(path, BufferedImage.class);
+	}
+	
+	public Config getConfig(String path) {
+		return (Config) getWithClass(path, Config.class);
 	}
 	
 	@Override
@@ -378,21 +478,27 @@ public class AssetManager implements EngineObject {
 	
 	private void initLuaTable() {
 		engReference = new EngineReference(this);
-		
-		engReference.set("registerInputGen", new TwoArgFunction() {
+		engReference.set("getShader", new OneArgFunction() {
 			@Override
-			public LuaValue call(LuaValue arg0, LuaValue arg1) {
-				if(!(arg0 instanceof LuaString))
-					return null;
-				if(!(arg1 instanceof LuaString))
-					return null;
-				
-				registerInputGen(arg0.checkjstring(), arg1.checkjstring());
-				
-				return null;
+			public LuaValue call(LuaValue arg0) {
+				if(arg0 instanceof LuaString) {
+					String str = arg0.checkjstring();
+					Shader shader = null;
+					try {
+						shader = getShader(str);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					if(shader != null)
+						return shader.getEngineReference();
+				}
+				return NIL;
 			}
 		});
-		
+	}
+	
+	public GLLoader getGLLoader() {
+		return glLoader;
 	}
 	
 }

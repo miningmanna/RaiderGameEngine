@@ -14,10 +14,12 @@ import org.rge.graphics.light.PointLight;
 import org.rge.graphics.light.SpotLight;
 import org.rge.lua.LuaEngine;
 import org.rge.lua.compat.LuaUtils;
+import org.rge.lua.compat.Matrix4;
 import org.rge.lua.compat.Vector3;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;
 import org.rge.node.DrawNode;
+import org.rge.node.Move;
 import org.joml.Vector3f;
 import org.luaj.vm2.LuaDouble;
 import org.luaj.vm2.LuaInteger;
@@ -31,8 +33,14 @@ import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.lwjgl.opengl.GL;
 import org.rge.assets.AssetManager;
+import org.rge.assets.config.Config;
 import org.rge.assets.models.Model;
 import org.rge.assets.models.Model.RawData;
+import org.rge.assets.models.tilemap.TileMap;
+import org.rge.assets.models.tilemap.TileMap.RawTileMap;
+import org.rge.assets.models.tilemap.TileMapTexture;
+import org.rge.assets.models.tilemap.TileMapTexture.RawTileMapTexture;
+import org.rge.assets.models.tilemap.TileType;
 import org.rge.window.Window;
 
 public class RGEContext implements EngineObject {
@@ -185,12 +193,28 @@ public class RGEContext implements EngineObject {
 				return new Vector3((float) arg0.checkdouble(), (float) arg1.checkdouble(), (float) arg2.checkdouble()).getEngineReference();
 			}
 		});
+		
+		engReference.set("newMatrix4", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return new Matrix4().getEngineReference();
+			}
+		});
+		
 		engReference.set("newDrawNode", new ZeroArgFunction() {
 			@Override
 			public LuaValue call() {
 				return new DrawNode().getEngineReference();
 			}
 		});
+		
+		engReference.set("newMove", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return new Move().getEngineReference();
+			}
+		});
+		
 		engReference.set("newCamera", new ZeroArgFunction() {
 			@Override
 			public LuaValue call() {
@@ -232,6 +256,68 @@ public class RGEContext implements EngineObject {
 				return new SpotLight(new Vector3f(), 0, 20).getEngineReference();
 			}
 		});
+		engReference.set("newTileType", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return new TileType().getEngineReference();
+			}
+		});
+		engReference.set("newRawTileMapTexture", new TwoArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1) {
+				if(arg0 instanceof LuaInteger && arg1 instanceof LuaInteger) {
+					
+					int w = arg0.checkint();
+					int h = arg0.checkint();
+					if(w < 0 || h < 0)
+						return NIL;
+					
+					return new RawTileMapTexture(w, h).getEngineReference();
+				}
+				return NIL;
+			}
+		});
+		engReference.set("newTileMapTexture", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(arg0 instanceof EngineReference) {
+					EngineReference ref = (EngineReference) arg0;
+					if(ref.parent instanceof RawTileMapTexture) {
+						return new TileMapTexture(am, (RawTileMapTexture) ref.parent).getEngineReference();
+					}
+					return NIL;
+				}
+				return NIL;
+			}
+		});
+		engReference.set("newRawTileMap", new TwoArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1) {
+				if(arg0 instanceof LuaInteger && arg1 instanceof LuaInteger) {
+					
+					int w = arg0.checkint();
+					int h = arg0.checkint();
+					if(w < 0 || h < 0)
+						return NIL;
+					
+					return new RawTileMap(w, h).getEngineReference();
+				}
+				return NIL;
+			}
+		});
+		engReference.set("newTileMap", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(arg0 instanceof EngineReference) {
+					EngineReference ref = (EngineReference) arg0;
+					if(ref.parent instanceof RawTileMap) {
+						return new TileMap(am, (RawTileMap) ref.parent).getEngineReference();
+					}
+					return NIL;
+				}
+				return NIL;
+			}
+		});
 		
 		engReference.set("clearColor", new VarArgFunction() {
 			@Override
@@ -245,6 +331,20 @@ public class RGEContext implements EngineObject {
 				setClearColor(new Color(args.arg(1).checkint(), args.arg(2).checkint(), args.arg(3).checkint()));
 				
 				return LuaUtils.fromColor(clearColor);
+			}
+		});
+		
+		engReference.set("assetSource", new TwoArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1) {
+				if(!(arg0 instanceof LuaString))
+					return null;
+				if(!(arg1 instanceof LuaString))
+					return null;
+				
+				am.registerInputGen(arg0.checkjstring(), arg1.checkjstring());
+				
+				return null;
 			}
 		});
 		
@@ -267,6 +367,45 @@ public class RGEContext implements EngineObject {
 				}
 				
 				return m.getEngineReference();
+			}
+		});
+		
+		engReference.set("getConfig", new TwoArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1) {
+				if(!(arg0 instanceof LuaString))
+					return NIL;
+				if(!(arg1 instanceof LuaString))
+					return NIL;
+				
+				Config conf = am.getConfig(arg0.checkjstring(), arg1.checkjstring());
+				if(conf == null)
+					return NIL;
+				
+				return conf.getEngineReference();
+			}
+		});
+		
+		engReference.set("get", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(!(arg0 instanceof LuaString))
+					return NIL;
+				String path = arg0.checkjstring();
+				
+				Object res = am.getValueOfSub(path, LuaValue.class, EngineObject.class, RawData.class);
+				if(res == null)
+					return NIL;
+				LuaValue val = null;
+				if(res instanceof EngineObject)
+					val = ((EngineObject) res).getEngineReference();
+				else if(res instanceof RawData)
+					try {
+						val = new Model(am, (RawData) res, false).getEngineReference();
+					} catch (IOException e) { val = NIL; }
+				else
+					val = (LuaValue) res;
+				return val;
 			}
 		});
 		
