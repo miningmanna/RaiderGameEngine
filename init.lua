@@ -5,8 +5,7 @@ rge.assetSource("dir", "NonGitignoreData")
 rge.assetSource("wad", "Data/test2.wad")
 
 require "connectTex"
-
-test()
+groundConnectMap = makeGroundConnections()
 
 rge.assetSource("dir", "ldraw")
 rge.assetSource("dir", "ldraw/models")
@@ -48,36 +47,6 @@ else
 	print("Getting: Lego*/Main/RenameReplace")
 	print(conf.getValue("Lego*/Main/RenameReplace"))
 end
-
-
-rawTileMap = rge.newRawTileMap(10, 10)
-rawTileMapTexture = rge.newRawTileMapTexture(8, 8)
-for x = 0,7,1 do
-	for y = 0,7,1 do
-		rawTileMapTexture.texture(x, y, string.format('IceSplit/ICE%d%d.BMP', x, y))
-	end
-end
-
-type0 = rge.newTileType()
-type0.id(0)
-type0.addConnect(0)
-stateV = rge.newVector3()
-stateV.x(7)
-stateV.y(1)
-for i = 0,255,1 do
-	print('ASS')
-	print(type0.state(i, stateV))
-end
-stateV.x(4)
-stateV.y(6)
-type0.state(255, stateV)
-print("DICK IS ADDED!")
-print(rawTileMapTexture.addType(type0))
-rawTileMap.texture(rawTileMapTexture)
-tileMap = rge.newTileMap(rawTileMap)
-
-tileMapNode = rge.newDrawNode()
-tileMapNode.model(tileMap)
 
 --[[moveSet = {}
 
@@ -214,4 +183,121 @@ function update(dt)
 end
 
 rge.registerEvent("update", update);
+
+surfmapPath = conf.getValue("Lego*/Levels/Tutorial04/TerrainMap")
+surfmapPath = string.sub(surfmapPath, 23, -1)
+surfmap = rge.get(surfmapPath)
+--surfmap = rge.get("Level09/Surf_09.map")
+
+pathmapPath = conf.getValue("Lego*/Levels/Tutorial04/PathMap")
+pathmapPath = string.sub(pathmapPath, 23, -1)
+pathmap = rge.get(pathmapPath)
+--pathmap = rge.get("Level09/Path_09.map")
+
+
+
+tileTypes = {
+	{
+		id = 1,
+		x = 0,
+		y = 5,
+		connects = { 1 }
+	},
+	{
+		id = 4,
+		x = 0,
+		y = 2
+	},
+	{
+		id = 5,
+		x = 0,
+		y = 0
+	},
+	{
+		id = 6,
+		x = 4,
+		y = 6
+	},
+	{
+		id = 9,
+		x = 4,
+		y = 5
+	},
+}
+
+rawTileMap = rge.newRawTileMap(#surfmap, #surfmap[1])
+
+for x = 1, #surfmap do
+	for y = 1, #surfmap[x] do
+		if pathmap[x][y] == 2 then
+			rawTileMap.tile(x-1, y-1, 99)
+		else
+			rawTileMap.tile(x-1, y-1, surfmap[x][y])
+		end
+	end
+end
+
+rawTileMapTexture = rge.newRawTileMapTexture(8, 8)
+for x = 0,7,1 do
+	for y = 0,7,1 do
+		rawTileMapTexture.texture(x, y, string.format('IceSplit/ICE%d%d.BMP', x, y))
+	end
+end
+
+for i, v in ipairs(tileTypes) do
+	t = rge.newTileType()
+	t.id(v.id)
+	local stateV = rge.newVector3()
+	stateV.x(v.x)
+	stateV.y(v.y)
+	for i = 0,255,1 do
+		t.state(i, stateV)
+	end
+	if(v.connects ~= nil) then
+		print("AYOAYO")
+		t.connects(v.connects)
+		stateV.x(7)
+		stateV.y(0)
+		t.state(255, stateV)
+	end
+	rawTileMapTexture.addType(t)
+end
+
+ppt = rge.newTileType()
+ppt.id(99)
+ppt.connects({ 99 })
+pptTexMap =
+{
+	XCONNECT = { x = 6, y = 0 },
+	TCONNECT = { x = 6, y = 4 },
+	ICONNECT = { x = 6, y = 2 },
+	LCONNECT = { x = 6, y = 3 },
+	ECONNECT = { x = 6, y = 5 }
+}
+local pptstateV = rge.newVector3()
+for i = 0,255 do
+	local connect = groundConnectMap[i]
+	pptstateV.x(pptTexMap[connect.name].x)
+	pptstateV.y(pptTexMap[connect.name].y)
+	pptstateV.z(connect.rot)
+	ppt.state(i, pptstateV)
+end
+rawTileMapTexture.addType(ppt)
+
+rawTileMap.texture(rawTileMapTexture)
+
+tileMap = rge.newTileMap(rawTileMap)
+
+tileMapNode = rge.newDrawNode()
+tileMapNode.model(tileMap)
+
+for y = 1, #surfmap[1] do
+	for x = 1,#surfmap  do
+		io.write(string.format("%d ", surfmap[x][y]))
+	end
+	io.write("\n")
+end
+
+
+
 

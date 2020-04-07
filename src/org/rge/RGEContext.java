@@ -268,7 +268,7 @@ public class RGEContext implements EngineObject {
 				if(arg0 instanceof LuaInteger && arg1 instanceof LuaInteger) {
 					
 					int w = arg0.checkint();
-					int h = arg0.checkint();
+					int h = arg1.checkint();
 					if(w < 0 || h < 0)
 						return NIL;
 					
@@ -296,7 +296,7 @@ public class RGEContext implements EngineObject {
 				if(arg0 instanceof LuaInteger && arg1 instanceof LuaInteger) {
 					
 					int w = arg0.checkint();
-					int h = arg0.checkint();
+					int h = arg1.checkint();
 					if(w < 0 || h < 0)
 						return NIL;
 					

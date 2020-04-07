@@ -85,7 +85,7 @@ public class TileMap implements EngineObject, Renderable {
 		verts = new Verts[] { vpos, vnorm, vtex };
 		
 		for(int x = 0; x < width; x++)
-			for(int y = 0; y < width; y++)
+			for(int y = 0; y < height; y++)
 				genTile(x, y);
 		
 		surf = new Surface();
@@ -192,10 +192,9 @@ public class TileMap implements EngineObject, Renderable {
 	}
 	
 	private void updateTexCoords(int x, int y) {
+		
 		int pointsoff = (x*height+y)*5;
 		int texoff = pointsoff*2;
-		
-		System.out.println("UPDATING TEX COORDS");
 		
 		if(texs == null) {
 			for(int i = 0; i < 10; i++)
@@ -260,11 +259,11 @@ public class TileMap implements EngineObject, Renderable {
 			
 			// Determine neighbouring conditions
 			int field = 0;
+			int offset = 0;
 			for(int ox = -1; ox < 2; ox++) {
 				for(int oy = -1; oy < 2; oy++) {
 					if(ox == 0 && oy == 0)
 						continue; // Skip tile at parameter coordinates
-					field = field << 1;
 					
 					int nx = ox + x;
 					int ny = oy + y;
@@ -276,7 +275,8 @@ public class TileMap implements EngineObject, Renderable {
 					
 					int neighboudId = tiles[nx][ny];
 					if(tex.findConnect(neighboudId) >= 0)
-						field |= 1; // Set bit
+						field |= (1 << offset); // Set bit
+					offset++;
 				}
 			}
 			
@@ -300,6 +300,7 @@ public class TileMap implements EngineObject, Renderable {
 				
 				float cos = 0;
 				float sin = 0;
+				
 				switch(rot)
 				{
 					case 0:

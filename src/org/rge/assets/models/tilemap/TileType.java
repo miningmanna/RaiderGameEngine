@@ -57,7 +57,7 @@ public class TileType implements EngineObject {
 					connects.clear();
 					
 					for(int i = 0; i < t.length(); i++) {
-						LuaValue v = t.get(i);
+						LuaValue v = t.get(i+1);
 						if(v instanceof LuaInteger)
 							connects.add(v.checkint());
 					}
@@ -65,7 +65,7 @@ public class TileType implements EngineObject {
 				
 				LuaTable ret = new LuaTable();
 				for(int i = 0; i < connects.size(); i++)
-					ret.add(LuaValue.valueOf(connects.get(i)));
+					ret.set(i+1, LuaValue.valueOf(connects.get(i)));
 				return ret;
 			}
 		});
@@ -123,19 +123,16 @@ public class TileType implements EngineObject {
 					if(!(arg1 instanceof EngineReference))
 						return new Vector3(texs[i].x, texs[i].y, texs[i].rot*90).getEngineReference();
 					
-					System.out.println("?????");
 					
 					EngineReference ref = (EngineReference) arg1;
 					Vector3 v;
 					if(!(ref.parent instanceof Vector3))
 						return new Vector3(texs[i].x, texs[i].y, texs[i].rot*90).getEngineReference();
-					System.out.println("!!!!!");
 					v = (Vector3) ref.parent;
 					TileTexPosRot r = texs[i];
 					r.x = (int) v.x;
 					r.y = (int) v.y;
 					r.rot = (int) (v.z / 90);
-					System.out.println("SET: " + r.x + " " + r.y + " " + r.rot);
 					return new Vector3(texs[i].x, texs[i].y, texs[i].rot*90).getEngineReference();
 				}
 				
