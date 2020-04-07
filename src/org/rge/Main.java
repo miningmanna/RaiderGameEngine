@@ -4,12 +4,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.rge.assets.AssetManager;
-import org.rge.assets.models.tilemap.TileMap;
-import org.rge.assets.models.tilemap.TileType;
-import org.rge.assets.models.tilemap.TileMap.RawTileMap;
-import org.rge.assets.models.tilemap.TileMapTexture.RawTileMapTexture;
-import org.rge.node.DrawNode;
-import org.rge.node.Move;
 
 public class Main {
 	
@@ -29,7 +23,6 @@ public class Main {
 		
 		RGEContext context = new RGEContext();
 		context.setInitScript("init.lua");
-		context.setTickScript("tick.lua");
 		context.init();
 		
 		/*int w = 10, h = 10;
@@ -72,7 +65,7 @@ public class Main {
 		}*/
 		
 		while(!context.shouldClose()) {
-			context.tick();
+			context.update();
 			//context.renderer.queue(node);
 			context.render();
 		}

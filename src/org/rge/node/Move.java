@@ -38,20 +38,16 @@ public class Move implements EngineObject {
 		int minLen = times.length < keys.length ? times.length : keys.length;
 		if(minLen == 0)
 			return null;
-		if(index >= minLen)
-			index = 0;
 		
-		int nextIndex = index + 1;
-		if(index == 0 && times[index] > time)
-			nextIndex = index;
-		if(index == minLen-1 && times[index] < time)
-			nextIndex = index;
+		index %= minLen;
+		int nextIndex = (index + 1)%minLen;
+		
 		if(keys[index] == null || keys[nextIndex] == null)
 			return null;
 		
 		float t = (time - times[index]) / (times[nextIndex] - times[index]);
 		if(index == nextIndex)
-			t = 1;
+			t = 0;
 		Matrix4f res = new Matrix4f();
 		keys[index].lerp(keys[nextIndex], t, res);
 		return res;

@@ -22,6 +22,7 @@ import org.rge.node.DrawNode;
 import org.rge.node.Move;
 import org.joml.Vector3f;
 import org.luaj.vm2.LuaDouble;
+import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
@@ -32,6 +33,7 @@ import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.lwjgl.opengl.GL;
+import org.rge.EventManager.EventHandler;
 import org.rge.assets.AssetManager;
 import org.rge.assets.config.Config;
 import org.rge.assets.models.Model;
@@ -49,35 +51,29 @@ public class RGEContext implements EngineObject {
 	
 	Window window;
 	AssetManager am;
+	EventManager em;
 	LuaEngine luaEngine;
 	Renderer renderer;
 	
 	Color clearColor;
 	
-	String initScriptPath, tickSciptPath;
-	LuaValue tickScript;
+	String initScriptPath;
 	
-	public RGEContext() {
-		
-		clearColor = Color.BLACK;
-		
-		am = new AssetManager();
-		
-	}
+	EventHandler tickHandler;
 	
 	public void setInitScript(String path) {
 		initScriptPath = path;
 	}
 	
-	public void setTickScript(String path) {
-		if(window != null)
-			tickScript = luaEngine.loadScript(path);
-		else
-			tickSciptPath = path;
-	}
-	
 	public void init() {
 		
+		
+		em = new EventManager();
+		tickHandler = em.register("update");
+		
+		clearColor = Color.BLACK;
+		
+		am = new AssetManager();
 		window = new Window("RGE engine");
 		
 		GL.createCapabilities();
@@ -93,15 +89,13 @@ public class RGEContext implements EngineObject {
 		
 		initLuaTable();
 		
-		luaEngine = new LuaEngine(this);
+		luaEngine = new LuaEngine(this, am);
 		
 		try {
 			luaEngine.exec(luaEngine.loadScript(initScriptPath));
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
-		tickScript = luaEngine.loadScript(tickSciptPath);
-		
 	}
 	
 	public void setSize(int width, int height) {
@@ -117,12 +111,18 @@ public class RGEContext implements EngineObject {
 		
 	}
 	
-	public void tick() {
+	private long lastTime = -1;
+	public void update() {
 		
 		window.pollEvents();
 		
-		luaEngine.exec(tickScript);
+		if(lastTime == -1)
+			lastTime = System.nanoTime();
+		long currentTime = System.nanoTime();
+		double dt = (currentTime - lastTime) / 1000000000.0;
+		lastTime = currentTime;
 		
+		tickHandler.fire(LuaValue.valueOf(dt));
 	}
 	
 	public void render() {
@@ -427,6 +427,13 @@ public class RGEContext implements EngineObject {
 		engReference.set("use", new OneArgFunction() {
 			@Override
 			public LuaValue call(LuaValue arg0) {
+				if(arg0 == NIL)
+				{
+					useCamera(null);
+					useLights(null);
+					return engReference;
+				}
+					
 				if(!(arg0 instanceof EngineReference))
 					return engReference;
 				EngineReference ref = (EngineReference) arg0;
@@ -434,6 +441,22 @@ public class RGEContext implements EngineObject {
 					useCamera((Camera) ref.parent);
 				else if(ref.parent instanceof LightGroup)
 					useLights((LightGroup) ref.parent);
+				return engReference;
+			}
+		});
+		
+		engReference.set("registerEvent", new TwoArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1) {
+				if(!(arg0 instanceof LuaString))
+					return engReference;
+				
+				if(!(arg1 instanceof LuaFunction))
+					return engReference;
+				
+				String eventName = arg0.tojstring();
+				em.setHandlerCallback(eventName, arg1);
+				
 				return engReference;
 			}
 		});

@@ -3,6 +3,10 @@ rge.assetSource("dir", "Data/CAPTAIN")
 rge.assetSource("dir", "Data")
 rge.assetSource("wad", "Data/test2.wad")
 
+require "connectTex"
+
+test()
+
 rge.assetSource("dir", "ldraw")
 rge.assetSource("dir", "ldraw/models")
 rge.assetSource("dir", "ldraw/parts")
@@ -159,4 +163,54 @@ genNodeTree(rootNode, lws.nodes, lws.models)
 
 setLoop(lws.moveSet, true)
 rootNode.setMoves(lws.moveSet)
+
+mouseSens = 0.005
+
+function update(dt)
+	
+	if rge.input.isDown("ESC") then
+		rge.window.setShouldClose(true)
+	end
+	
+	
+	if rge.input.isDown("LEFT_SHIFT") then
+		speed = 10
+	else
+		speed = 2
+	end
+	
+	if rge.input.isDown("W") then
+		camera.moveZ(speed*dt)
+	end
+	if rge.input.isDown("A") then
+		camera.moveX(-speed*dt)
+	end
+	if rge.input.isDown("S") then
+		camera.moveZ(-speed*dt)
+	end
+	if rge.input.isDown("D") then
+		camera.moveX(speed*dt)
+	end
+	if rge.input.isDown("SPACE") then
+		camera.moveY(speed*dt)
+	end
+	if rge.input.isDown("LEFT_CTRL") then
+		camera.moveY(-speed*dt)
+	end
+	
+	camera.rotateHorizontal	(mouseSens * rge.input.getMouseDX())
+	camera.rotateVertical	(mouseSens * rge.input.getMouseDY())
+	
+	camera.update()
+	
+	rge.use(camera)
+	rge.use(lights)
+	
+	rootNode.advance(dt)
+	rge.render(rootNode)
+	rge.render(tileMapNode)
+
+end
+
+rge.registerEvent("update", update);
 
