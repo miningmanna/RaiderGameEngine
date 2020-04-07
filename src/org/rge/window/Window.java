@@ -16,7 +16,10 @@ import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.glfw.GLFWWindowSizeCallbackI;
 import org.lwjgl.system.MemoryStack;
+import org.rge.EventManager;
+import org.rge.EventManager.EventHandler;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;
 
@@ -31,6 +34,8 @@ public class Window implements EngineObject {
 	private int width;
 	private int height;
 	public Input input;
+	
+	private EventHandler windowResizeEvent;
 	
 	public Window(String title, int width, int height) {
 		
@@ -78,10 +83,24 @@ public class Window implements EngineObject {
 		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1);
 		
+		glfwSetWindowSizeCallback(window, new GLFWWindowSizeCallbackI() {
+			@Override
+			public void invoke(long arg0, int arg1, int arg2) {
+				if(windowResizeEvent != null)
+					windowResizeEvent.fire(LuaValue.valueOf(arg1), LuaValue.valueOf(arg2));
+			}
+		});
+		
 	}
 	
 	public Window(String title) {
 		this(title, DEF_WIDTH, DEF_HEIGHT);
+	}
+	
+	public void registerEvents(EventManager em) {
+		
+		windowResizeEvent = em.register("windowResize");
+		
 	}
 	
 	public void setSize(int width, int height) {
