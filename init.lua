@@ -1,6 +1,7 @@
 
 rge.assetSource("dir", "Data/CAPTAIN")
 rge.assetSource("dir", "Data")
+rge.assetSource("dir", "NonGitignoreData")
 rge.assetSource("wad", "Data/test2.wad")
 
 require "connectTex"
