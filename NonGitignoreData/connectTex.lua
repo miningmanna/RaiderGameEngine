@@ -80,15 +80,55 @@ end
 
 cliffPatterns =
 {
-	
+	{
+		name = "ERROR",
+		mask = {
+			{1, 1, 1},
+			{1, 0, 1},
+			{1, 1, 1}
+		}
+	},
+	{
+		name = "ROOF",
+		mask = {
+			{2, 2, 2},
+			{2, 0, 2},
+			{2, 2, 2}
+		}
+	},
+	{
+		name = "FLAT",
+		mask = {
+			{2, 2, 2},
+			{2, 0, 2},
+			{1, 3, 1}
+		}
+	},
+	{
+		name = "OCORNER",
+		mask = {
+			{2, 2, 1},
+			{2, 0, 3},
+			{1, 3, 1}
+		}
+	},
+	{
+		name = "ICORNER",
+		mask = {
+			{2, 2, 2},
+			{2, 0, 2},
+			{2, 2, 3}
+		}
+	},
+	{
+		name = "DIAGONAL",
+		mask = {
+			{2, 2, 3},
+			{2, 0, 2},
+			{3, 2, 2}
+		}
+	}
 }
-
-function makeCliffConnections()
-	connects = {}
-	
-	return connects
-end
-
 
 groundPatterns =
 {
@@ -133,7 +173,7 @@ groundPatterns =
 		}
 	},
 	{
-		name = "ECONNECT",
+		name = "NCONNECT",
 		mask = {
 			{1, 3, 1},
 			{3, 0, 3},
@@ -142,14 +182,14 @@ groundPatterns =
 	}
 }
 
-function makeGroundConnections()
+function makeConnections(patterns)
 	local connects = {}
 	for i = 1, 256 do
 		connects[i] = {}
 	end
 	
-	for i = 1,#groundPatterns do
-		local pattern = groundPatterns[i]
+	for i = 1,#patterns do
+		local pattern = patterns[i]
 		for _rot = 3,0,-1 do
 			local perms = makePerms(rotateTable(pattern.mask, _rot))
 			for j = 1,#perms do
@@ -159,4 +199,14 @@ function makeGroundConnections()
 	end
 	
 	return connects
+end
+
+function makeGroundConnections()
+	return makeConnections(groundPatterns)
+end
+
+
+
+function makeCliffConnections()
+	return makeConnections(cliffPatterns)
 end

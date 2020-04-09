@@ -123,11 +123,8 @@ public class GLLoader {
 		}
 		
 		int[] indices = new int[tileMap.width * tileMap.height * 4 * 3]; // For each tile -> 4 triangles -> 3 indices per triangle
-		for(int x = 0; x < tileMap.width; x++)
-			for(int y = 0; y < tileMap.height; y++) // For each tile
-				for(int i = 0; i < 4; i++) // In each triangle
-					for(int j = 0; j < 3; j++) // determine value for the index at current index
-						indices[(((x*tileMap.height)+y)*4 + i)*3 + j] = j == 2 ? (x*tileMap.height+y)*5 + 4: (x*tileMap.height+y)*5 + (i+j)%4;
+		for(int i = 0; i < indices.length; i++)
+			indices[i] = i;
 		
 		int indVbo = glGenBuffers();
 		vbos.add(indVbo);

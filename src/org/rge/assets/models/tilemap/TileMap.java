@@ -1,11 +1,11 @@
 package org.rge.assets.models.tilemap;
 
-import java.io.IOException;
-
+import org.luaj.vm2.LuaDouble;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ThreeArgFunction;
+import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.rge.assets.AssetManager;
 import org.rge.assets.GLLoader;
@@ -46,12 +46,6 @@ public class TileMap implements EngineObject, Renderable {
 		width = raw.width;
 		height = raw.height;
 		
-		try {
-			shader = am.getShader("tilemap");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
 		int points = width*height + (width+1)*(height+1);
 		
 		heights = new float[points];
@@ -65,7 +59,7 @@ public class TileMap implements EngineObject, Renderable {
 			texs = new TileMapTexture(am, raw.rawTexs);
 		
 		// CREATE MESH
-		int vcount = width*height*5;
+		int vcount = width*height*12;
 		vpos = new Verts();
 		vpos.dimension = 3;
 		vpos.pos = 0;
@@ -141,12 +135,10 @@ public class TileMap implements EngineObject, Renderable {
 			0.5f, 0.5f
 	};
 	private void genMesh(int x, int y) {
-		int pointsoff = (x*height+y)*5;
+		int pointsoff = (x*height+y)*12;
 		int posoff = pointsoff*3;
 		
-		
 		for(int i = 0; i < 5; i++) {
-			int off = posoff+i*3;
 			int hindex = 0;
 			switch(i) {
 			case 0: hindex = (y*(2*width+1))+x; break;
@@ -156,22 +148,36 @@ public class TileMap implements EngineObject, Renderable {
 			case 4: hindex = (y*(2*width+1))+x+width+1; break;
 			}
 			
-			vpos.rawVerts[off+0] = x + POS_OFFSETS[i*2];
-			vpos.rawVerts[off+1] = heights[hindex];
-			vpos.rawVerts[off+2] = y + POS_OFFSETS[i*2+1];
 			
+			if(i == 4) {
+				for(int j = 0; j < 4; j++)
+				{
+					int off = posoff + ((j*3 + 2)*3);
+					vpos.rawVerts[off+0] = x + POS_OFFSETS[i*2];
+					vpos.rawVerts[off+1] = heights[hindex];
+					vpos.rawVerts[off+2] = y + POS_OFFSETS[i*2+1];
+				}
+			} else {
+				for(int j = 0; j < 2; j++)
+				{
+					int off = posoff + ((i*3 + j*10)%12)*3;
+					vpos.rawVerts[off+0] = x + POS_OFFSETS[i*2];
+					vpos.rawVerts[off+1] = heights[hindex];
+					vpos.rawVerts[off+2] = y + POS_OFFSETS[i*2+1];
+				}
+			}
 		}
 		
 	}
 	
 	private void updateNormals(int x, int y) {
-		int pointsoff = (x*height+y)*5;
+		int pointsoff = (x*height+y)*12;
 		
 		for(int j = 0; j < 4; j++) {
 			
-			int p0 = pointsoff + j; // Current point -> starting point of triangle i
-			int p1 = pointsoff + 4; // Always the middlepoint -> index 4 in current tile
-			int p2 = pointsoff + (j+1)%4; // Point of the next triagnel (i+1)%4
+			int p0 = pointsoff + j*3; // Current point -> starting point of triangle j
+			int p1 = pointsoff + j*3 + 1; // Always the middlepoint -> index 4 in current tile
+			int p2 = pointsoff + j*3 + 2; // Point of the next triagnel (i+1)%4
 			
 			// a is a vector from p0 to p1
 			float[] a = new float[3];
@@ -193,20 +199,52 @@ public class TileMap implements EngineObject, Renderable {
 	
 	private void updateTexCoords(int x, int y) {
 		
-		int pointsoff = (x*height+y)*5;
+		int pointsoff = (x*height+y)*12;
 		int texoff = pointsoff*2;
 		
 		if(texs == null) {
-			for(int i = 0; i < 10; i++)
-				vtex.rawVerts[texoff+i] = POS_OFFSETS[i];
+			for(int i = 0; i < 5; i++)
+			{
+				if(i == 4) {
+					for(int j = 0; j < 4; j++)
+					{
+						int off = texoff + ((j*3 + 2)*2);
+						vtex.rawVerts[off    ] = POS_OFFSETS[i*2];
+						vtex.rawVerts[off + 1] = POS_OFFSETS[i*2+1];
+					}
+				} else {
+					for(int j = 0; j < 2; j++)
+					{
+						int off = texoff + ((i*3 + j*10)%12)*2;
+						vtex.rawVerts[off    ] = POS_OFFSETS[i*2];
+						vtex.rawVerts[off + 1] = POS_OFFSETS[i*2+1];
+					}
+				}
+			}
 			return;
 		}
 		
 		int tile = tiles[x][y];
 		TileType tex = texs.types.get(tile);
 		if(tex == null) {
-			for(int i = 0; i < 10; i++)
-				vtex.rawVerts[texoff+i] = POS_OFFSETS[i];
+			for(int i = 0; i < 5; i++)
+			{
+				if(i == 4) {
+					for(int j = 0; j < 4; j++)
+					{
+						int off = texoff + ((j*3 + 2)*2);
+						vtex.rawVerts[off    ] = POS_OFFSETS[i*2];
+						vtex.rawVerts[off + 1] = POS_OFFSETS[i*2+1];
+					}
+				} else {
+					for(int j = 0; j < 2; j++)
+					{
+						int off = texoff + ((i*3 + j*10)%12)*2;
+						vtex.rawVerts[off    ] = POS_OFFSETS[i*2];
+						vtex.rawVerts[off + 1] = POS_OFFSETS[i*2+1];
+					}
+				}
+			}
 			return;
 		}
 
@@ -221,9 +259,9 @@ public class TileMap implements EngineObject, Renderable {
 			// Move back: with Xf = X'+0.5f
 			// Move back: with Yf = Y'+0.5f
 			
-			for(int i = 0; i < 10; i += 2) {
-				float xp = POS_OFFSETS[i]   - 0.5f;
-				float yp = POS_OFFSETS[i+1] - 0.5f;
+			for(int i = 0; i < 5; i++) {
+				float xp = POS_OFFSETS[i*2]   - 0.5f;
+				float yp = POS_OFFSETS[i*2+1] - 0.5f;
 				int rot = tdata.rot % 4;
 				if(rot < 0) // In case rotation is negative
 					rot += 4;
@@ -251,9 +289,21 @@ public class TileMap implements EngineObject, Renderable {
 						break;
 				}
 				
-				
-				vtex.rawVerts[texoff + i    ] = ((xp*cos - yp*sin) + 0.5f + tdata.x) / (float) texs.width;
-				vtex.rawVerts[texoff + i + 1] = ((xp*sin + yp*cos) + 0.5f + tdata.y) / (float) texs.height;
+				if(i == 4) {
+					for(int j = 0; j < 4; j++)
+					{
+						int off = texoff + ((j*3 + 2)*2);
+						vtex.rawVerts[off    ] = ((xp*cos - yp*sin) + 0.5f + tdata.x) / (float) texs.width;
+						vtex.rawVerts[off + 1] = ((xp*sin + yp*cos) + 0.5f + tdata.y) / (float) texs.height;
+					}
+				} else {
+					for(int j = 0; j < 2; j++)
+					{
+						int off = texoff + ((i*3 + j*10)%12)*2;
+						vtex.rawVerts[off    ] = ((xp*cos - yp*sin) + 0.5f + tdata.x) / (float) texs.width;
+						vtex.rawVerts[off + 1] = ((xp*sin + yp*cos) + 0.5f + tdata.y) / (float) texs.height;
+					}
+				}
 			}
 		} else {
 			
@@ -268,12 +318,15 @@ public class TileMap implements EngineObject, Renderable {
 					int nx = ox + x;
 					int ny = oy + y;
 					// Skip if out of bounds (equals a non-connecting tile)
+
+					int neighboudId;
 					if(nx < 0 || nx >= width)
-						continue;
-					if(ny < 0 || ny >= height)
-						continue;
+						neighboudId = tiles[x][y];
+					else if(ny < 0 || ny >= height)
+						neighboudId = tiles[x][y];
+					else
+						neighboudId = tiles[nx][ny];
 					
-					int neighboudId = tiles[nx][ny];
 					if(tex.findConnect(neighboudId) >= 0)
 						field |= (1 << offset); // Set bit
 					offset++;
@@ -290,9 +343,9 @@ public class TileMap implements EngineObject, Renderable {
 			// Move back: with Xf = X'+0.5f
 			// Move back: with Yf = Y'+0.5f
 			
-			for(int i = 0; i < 10; i += 2) {
-				float xp = POS_OFFSETS[i]   - 0.5f;
-				float yp = POS_OFFSETS[i+1] - 0.5f;
+			for(int i = 0; i < 5; i++) {
+				float xp = POS_OFFSETS[i*2]   - 0.5f;
+				float yp = POS_OFFSETS[i*2+1] - 0.5f;
 				int rot = tdata.rot % 4;
 				if(rot < 0) // In case rotation is negative
 					rot += 4;
@@ -321,9 +374,21 @@ public class TileMap implements EngineObject, Renderable {
 						break;
 				}
 				
-				
-				vtex.rawVerts[texoff + i    ] = ((xp*cos - yp*sin) + 0.5f + tdata.x) / (float) texs.width;
-				vtex.rawVerts[texoff + i + 1] = ((xp*sin + yp*cos) + 0.5f + tdata.y) / (float) texs.height;
+				if(i == 4) {
+					for(int j = 0; j < 4; j++)
+					{
+						int off = texoff + ((j*3 + 2)*2);
+						vtex.rawVerts[off    ] = ((xp*cos - yp*sin) + 0.5f + tdata.x) / (float) texs.width;
+						vtex.rawVerts[off + 1] = ((xp*sin + yp*cos) + 0.5f + tdata.y) / (float) texs.height;
+					}
+				} else {
+					for(int j = 0; j < 2; j++)
+					{
+						int off = texoff + ((i*3 + j*10)%12)*2;
+						vtex.rawVerts[off    ] = ((xp*cos - yp*sin) + 0.5f + tdata.x) / (float) texs.width;
+						vtex.rawVerts[off + 1] = ((xp*sin + yp*cos) + 0.5f + tdata.y) / (float) texs.height;
+					}
+				}
 			}
 		}
 	}
@@ -337,6 +402,33 @@ public class TileMap implements EngineObject, Renderable {
 	private void initLuaTable() {
 		
 		ref = new EngineReference(this);
+		ref.set("shader", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				
+				if(arg0 == NIL) {
+					shader = null;
+					return NIL;
+				}
+				
+				if(!(arg0 instanceof EngineReference))
+					if(shader == null)
+						return NIL;
+					else
+						return shader.getEngineReference();
+				
+				EngineReference _ref = (EngineReference) arg0;
+				if(!(_ref.parent instanceof Shader))
+					if(shader == null)
+						return NIL;
+					else
+						return shader.getEngineReference();
+				
+				shader = (Shader) _ref.parent;
+				
+				return shader.getEngineReference();
+			}
+		});
 		
 	}
 	
@@ -390,6 +482,24 @@ public class TileMap implements EngineObject, Renderable {
 						return LuaValue.valueOf(tiles[x][y]);
 					}
 					return NIL;
+				}
+			});
+			ref.set("pointHeight", new TwoArgFunction() {
+				@Override
+				public LuaValue call(LuaValue arg0, LuaValue arg1) {
+					if(!(arg0 instanceof LuaInteger))
+						return NIL;
+					
+					int offset = arg0.checkint();
+					if(offset < 0 || offset >= heights.length)
+						return NIL;
+					
+					if(!(arg1 instanceof LuaDouble) && !(arg1 instanceof LuaInteger))
+						return LuaValue.valueOf(heights[offset]);
+					
+					heights[offset] = arg1.tofloat();
+					
+					return LuaValue.valueOf(heights[offset]);
 				}
 			});
 			ref.set("texture", new OneArgFunction() {

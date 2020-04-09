@@ -35,7 +35,6 @@ public class Model implements EngineObject, Renderable {
 		raw = data;
 		
 		am.loadModel(this);
-		shader = am.getShader(data.shaderName);
 		
 		surfs = new Surface[data.surfaces.length];
 		for(int i = 0; i < surfs.length; i++) {
@@ -75,7 +74,6 @@ public class Model implements EngineObject, Renderable {
 	
 	public static class RawData {
 		
-		public String shaderName;
 		public RawSurface[] surfaces;
 		public Verts[] verts;
 		public int[] rawInds;
@@ -104,16 +102,29 @@ public class Model implements EngineObject, Renderable {
 		
 		engReference.set("shader", new OneArgFunction() {
 			@Override
-			public LuaValue call(LuaValue arg) {
-				if(!(arg instanceof EngineReference))
-					return getEngineReference();
-				EngineReference ref = (EngineReference) arg;
-				if(!(ref.parent instanceof Shader))
-					return getEngineReference();
+			public LuaValue call(LuaValue arg0) {
 				
-				shader = (Shader) ref.parent;
+				if(arg0 == NIL) {
+					shader = null;
+					return NIL;
+				}
 				
-				return getEngineReference();
+				if(!(arg0 instanceof EngineReference))
+					if(shader == null)
+						return NIL;
+					else
+						return shader.getEngineReference();
+				
+				EngineReference _ref = (EngineReference) arg0;
+				if(!(_ref.parent instanceof Shader))
+					if(shader == null)
+						return NIL;
+					else
+						return shader.getEngineReference();
+				
+				shader = (Shader) _ref.parent;
+				
+				return shader.getEngineReference();
 			}
 		});
 		

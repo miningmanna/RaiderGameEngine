@@ -4,8 +4,7 @@ rge.assetSource("dir", "Data")
 rge.assetSource("dir", "NonGitignoreData")
 rge.assetSource("wad", "Data/test2.wad")
 
-require "connectTex"
-groundConnectMap = makeGroundConnections()
+require "tileMapPrepare"
 
 rge.assetSource("dir", "ldraw")
 rge.assetSource("dir", "ldraw/models")
@@ -15,6 +14,9 @@ rge.assetSource("dir", "ldraw/p")
 rge.window.setSize(1920, 1080)
 rge.window.center()
 rge.window.show()
+
+modelShader = rge.assets.getShader("lwo")
+tilemapShader = rge.assets.getShader("tilemap")
 
 rootNode = rge.newDrawNode()
 --rootNode.model(rge.get("Buildings/Docks/dock2.lwo"))
@@ -107,7 +109,11 @@ local function genNodeTree(root, nodeNames, models)
 			node.name(k)
 			print("LUA NODE: "..k)
 			if models[k].model ~= nil then
-				node.model(rge.get(models[k].model))
+				local m = rge.get(models[k].model)
+				if m ~= nil then
+					m.shader(modelShader)
+					node.model(m)
+				end
 			end
 			root.addSubNode(node)
 			genNodeTree(node, v, models[k])
@@ -184,109 +190,49 @@ end
 
 rge.registerEvent("update", update);
 
-surfmapPath = conf.getValue("Lego*/Levels/Tutorial04/TerrainMap")
-surfmapPath = string.sub(surfmapPath, 23, -1)
+--levelpath = "Lego*/Levels/Tutorial04/"
+levelpath = "Lego*/Levels/Level01/"
+
+surfmapPath = conf.getValue(levelpath.."TerrainMap")
+--surfmapPath = string.sub(surfmapPath, 23, -1)
 surfmap = rge.get(surfmapPath)
 --surfmap = rge.get("Level09/Surf_09.map")
 
-pathmapPath = conf.getValue("Lego*/Levels/Tutorial04/PathMap")
-pathmapPath = string.sub(pathmapPath, 23, -1)
+pathmapPath = conf.getValue(levelpath.."PathMap")
+--pathmapPath = string.sub(pathmapPath, 23, -1)
 pathmap = rge.get(pathmapPath)
 --pathmap = rge.get("Level09/Path_09.map")
 
+heightmapPath = conf.getValue(levelpath.."SurfaceMap")
+heightmap = rge.get(heightmapPath)
 
-
-tileTypes = {
-	{
-		id = 1,
-		x = 0,
-		y = 5,
-		connects = { 1 }
-	},
-	{
-		id = 4,
-		x = 0,
-		y = 2
-	},
-	{
-		id = 5,
-		x = 0,
-		y = 0
-	},
-	{
-		id = 6,
-		x = 4,
-		y = 6
-	},
-	{
-		id = 9,
-		x = 4,
-		y = 5
-	},
+texFormatStrings = {
+	["Textures::ROCK"] = 'World/WorldTextures/RockSplit/ROCK%d%d.BMP',
+	["Textures::LAVA"] = 'World/WorldTextures/LavaSplit/LAVA%d%d.BMP',
+	["Textures::ICE"] = 'World/WorldTextures/IceSplit/ICE%d%d.BMP',
+	["Textures::Rock"] = 'World/WorldTextures/RockSplit/ROCK%d%d.BMP',
+	["Textures::Lava"] = 'World/WorldTextures/LavaSplit/LAVA%d%d.BMP',
+	["Textures::Ice"] = 'World/WorldTextures/IceSplit/ICE%d%d.BMP',
 }
 
-rawTileMap = rge.newRawTileMap(#surfmap, #surfmap[1])
+texSet = conf.getValue(levelpath.."TextureSet")
+print("Texset:")
+print(texSet)
+texFormatString = texFormatStrings[texSet]
 
-for x = 1, #surfmap do
-	for y = 1, #surfmap[x] do
-		if pathmap[x][y] == 2 then
-			rawTileMap.tile(x-1, y-1, 99)
-		else
-			rawTileMap.tile(x-1, y-1, surfmap[x][y])
-		end
-	end
-end
+rawTileMap = loadFromMaps(surfmap, heightmap, pathmap)
 
 rawTileMapTexture = rge.newRawTileMapTexture(8, 8)
 for x = 0,7,1 do
 	for y = 0,7,1 do
-		rawTileMapTexture.texture(x, y, string.format('IceSplit/ICE%d%d.BMP', x, y))
+		rawTileMapTexture.texture(x, y, string.format(texFormatString, x, y))
 	end
 end
-
-for i, v in ipairs(tileTypes) do
-	t = rge.newTileType()
-	t.id(v.id)
-	local stateV = rge.newVector3()
-	stateV.x(v.x)
-	stateV.y(v.y)
-	for i = 0,255,1 do
-		t.state(i, stateV)
-	end
-	if(v.connects ~= nil) then
-		print("AYOAYO")
-		t.connects(v.connects)
-		stateV.x(7)
-		stateV.y(0)
-		t.state(255, stateV)
-	end
-	rawTileMapTexture.addType(t)
-end
-
-ppt = rge.newTileType()
-ppt.id(99)
-ppt.connects({ 99 })
-pptTexMap =
-{
-	XCONNECT = { x = 6, y = 0 },
-	TCONNECT = { x = 6, y = 4 },
-	ICONNECT = { x = 6, y = 2 },
-	LCONNECT = { x = 6, y = 3 },
-	ECONNECT = { x = 6, y = 5 }
-}
-local pptstateV = rge.newVector3()
-for i = 0,255 do
-	local connect = groundConnectMap[i]
-	pptstateV.x(pptTexMap[connect.name].x)
-	pptstateV.y(pptTexMap[connect.name].y)
-	pptstateV.z(connect.rot)
-	ppt.state(i, pptstateV)
-end
-rawTileMapTexture.addType(ppt)
-
+populateRawTex(rawTileMapTexture)
 rawTileMap.texture(rawTileMapTexture)
 
 tileMap = rge.newTileMap(rawTileMap)
+tileMap.shader(tilemapShader)
 
 tileMapNode = rge.newDrawNode()
 tileMapNode.model(tileMap)
