@@ -103,10 +103,42 @@ public class GLLoader {
 		return id;
 	}
 	
-	public void changeTiles(int... tile) {
+	public void updateTilesTiles(TileMap tileMap, int... tile) {
+		int tileLim = tileMap.width*tileMap.height - 1;
 		
-		// TODO: load changed vertices to GPU
+		for(int i : tile) {
+			if(i < 0 || i > tileLim)
+				continue;
+			
+			for(int j = 0; j < tileMap.verts.length; j++) {
+				int dim = tileMap.verts[j].dimension;
+				int off = i*12*dim;
+				
+				System.out.println(j + " : " + dim + " " + tileMap.usedVBOs[j]);
+				System.out.println(12*dim);
+				System.out.println(off);
+				
+				bufferVertexSub(
+						tileMap.vbos[j],
+						off,
+						tileMap.verts[j].rawVerts,
+						off,
+						12*dim);
+				
+			}
+			
+		}
 		
+	}
+	
+	private static void bufferVertexSub(int vbo, long boff, float[] data, int voff, int length) {
+		
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		FloatBuffer buff = BufferUtils.createFloatBuffer(length);
+		buff.put(data, voff, length);
+		buff.flip();
+		glBufferSubData(GL_ARRAY_BUFFER, boff*4, buff);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 	
 	public void loadTileMap(TileMap tileMap) {
@@ -116,10 +148,11 @@ public class GLLoader {
 		glBindVertexArray(tileMap.vao);
 		
 		tileMap.usedVBOs = new int[tileMap.verts.length];
+		tileMap.vbos = new int[tileMap.verts.length];
 		
 		for(int i = 0; i < tileMap.verts.length; i++) {
 			tileMap.usedVBOs[i] = tileMap.verts[i].pos;
-			loadVertsIntoVBO(tileMap.verts[i], GL_DYNAMIC_DRAW);
+			tileMap.vbos[i] = loadVertsIntoVBO(tileMap.verts[i], GL_DYNAMIC_DRAW);
 		}
 		
 		int[] indices = new int[tileMap.width * tileMap.height * 4 * 3]; // For each tile -> 4 triangles -> 3 indices per triangle

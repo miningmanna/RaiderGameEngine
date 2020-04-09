@@ -44,11 +44,45 @@ end
 
 function getMap(config, configNodePath)
 	
+	local map = {}
+	
+	-- CLASS FUNCTIONS
+	
+	map.clampX = function(self, x)
+		if x < 1 then
+			return 1
+		elseif x > #self.surf then
+			return #self.surf
+		end
+		return x
+	end
+	
+	map.clampY = function(self, y)
+		if y < 1 then
+			return 1
+		elseif y > #self.surf[1] then
+			return #self.surf[1]
+		end
+		return y
+	end
+	
+	map.breakRock = function(self, x, y)
+		
+		
+		
+	end
+	
+	map.updateTile = function(self, x, y)
+		
+		
+		
+	end
+	
+	-- CLASS FUNCTIONS END
+	
 	if string.sub(configNodePath, -1, -1) ~= "/" then
 		configNodePath = configNodePath.."/"
 	end
-	
-	local map = {}
 	
 	for i, v in ipairs(mapTypes) do
 		-- Get all maps entered in config
@@ -68,8 +102,4 @@ function getMap(config, configNodePath)
 	return map
 end
 
-function breakRock(self, x, y)
-	
-	
-	
-end
+

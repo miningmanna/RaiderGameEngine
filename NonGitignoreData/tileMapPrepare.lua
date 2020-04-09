@@ -6,7 +6,7 @@ cliffConnectMap = makeCliffConnections()
 local divFactor = 7
 local wallHeight = 1
 
-local ppconnects = { 99, 100 }
+local ppconnects = { 30, 31 }
 local cliffconnects = { 1, 2, 3, 4, 8, 10, 11 }
 
 local types =
@@ -141,6 +141,22 @@ local types =
 		texmap = groundConnectMap,
 		tex = {
 			NCONNECT = { x = 1, y = 0 },
+		}
+	},
+	{
+		-- Unpowered Power path
+		surf = 5,
+		path = 2,
+		id = 30,
+		connects = ppconnects,
+		texmap = groundConnectMap,
+		tex = {
+			NCONNECT = { x = 6, y = 5 },
+			XCONNECT = { x = 6, y = 0 },
+			TCONNECT = { x = 6, y = 4 },
+			LCONNECT = { x = 6, y = 3 },
+			ICONNECT = { x = 6, y = 2 },
+			ECONNECT = { x = 6, y = 5 },
 		}
 	},
 	{

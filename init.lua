@@ -144,7 +144,39 @@ rootNode.setMoves(lws.moveSet)
 
 mouseSens = 0.005
 
+
+levelpath = "Lego*/Levels/Level22/"
+mapObj = getMap(conf, levelpath)
+mapObj.tmap.shader(tilemapShader)
+
+tileMapNode = rge.newDrawNode()
+tileMapNode.model(mapObj.tmap)
+
+changerate = 20.0
+changedt = 1/changerate
+
+st = 0
+x = -1
+y = 0
+
 function update(dt)
+	
+	st = st + dt
+	
+	if st > changedt then
+		st = math.fmod(st, changedt)
+		x = x+1
+		if x >= #mapObj.surf then
+			x = 0
+			y = y + 1
+			if y >= #mapObj.surf[1] then
+				y = 0
+			end
+		end
+		
+		mapObj.tmap.tile(x, y, 30)
+		
+	end
 	
 	if rge.input.isDown("ESC") then
 		rge.window.setShouldClose(true)
@@ -193,20 +225,19 @@ end
 rge.registerEvent("update", update);
 
 --levelpath = "Lego*/Levels/Tutorial04/"
-levelpath = "Lego*/Levels/Level22/"
 
 surfmapPath = conf.getValue(levelpath.."TerrainMap")
 --surfmapPath = string.sub(surfmapPath, 23, -1)
 surfmap = rge.get(surfmapPath)
 --surfmap = rge.get("Level09/Surf_09.map")
 
-pathmapPath = conf.getValue(levelpath.."PathMap")
+--pathmapPath = conf.getValue(levelpath.."PathMap")
 --pathmapPath = string.sub(pathmapPath, 23, -1)
-pathmap = rge.get(pathmapPath)
+--pathmap = rge.get(pathmapPath)
 --pathmap = rge.get("Level09/Path_09.map")
 
-heightmapPath = conf.getValue(levelpath.."SurfaceMap")
-heightmap = rge.get(heightmapPath)
+--heightmapPath = conf.getValue(levelpath.."SurfaceMap")
+--heightmap = rge.get(heightmapPath)
 
 
 
@@ -215,12 +246,6 @@ print("Texset:")
 print(texSet)
 
 --rawTileMap = loadFromMaps(surfmap, heightmap, pathmap)
-
-local mapObj = getMap(conf, levelpath)
-mapObj.tmap.shader(tilemapShader)
-
-tileMapNode = rge.newDrawNode()
-tileMapNode.model(mapObj.tmap)
 
 for y = 1, #surfmap[1] do
 	for x = 1,#surfmap  do

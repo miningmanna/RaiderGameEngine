@@ -29,6 +29,7 @@ public class TileMap implements EngineObject, Renderable {
 	public Surface surf;
 	public Surface[] _surfs;
 	public int[] usedVBOs;
+	public int[] vbos;
 	public Verts vpos, vnorm, vtex; // Travel in the y direction, then x
 	public Verts[] verts;
 	
@@ -38,6 +39,7 @@ public class TileMap implements EngineObject, Renderable {
 	public int width, height;
 	public float[] heights;
 	public int[][] tiles;
+
 	
 	public TileMap(AssetManager am, RawTileMap raw) {
 		initLuaTable();
@@ -76,10 +78,10 @@ public class TileMap implements EngineObject, Renderable {
 		vnorm.rawVerts = new float[vcount*3];
 		vtex.rawVerts = new float[vcount*2];
 		
-		verts = new Verts[] { vpos, vnorm, vtex };
+		verts = new Verts[] { vpos, vtex, vnorm };
 		
-		for(int x = 0; x < width; x++)
-			for(int y = 0; y < height; y++)
+		for(int y = 0; y < height; y++)
+			for(int x = 0; x < width; x++)
 				genTile(x, y);
 		
 		surf = new Surface();
@@ -94,28 +96,6 @@ public class TileMap implements EngineObject, Renderable {
 		_surfs = new Surface[] { surf };
 		
 		glLoader.loadTileMap(this);
-		
-	}
-	
-	private void updateMeshHeight(int x, int y) {
-		
-		int pointsoff = (x*height+y)*5;
-		int posoff = pointsoff*3;
-		
-		for(int i = 0; i < 5; i++) {
-			int off = posoff+i*3;
-			int hindex = 0;
-			switch(i) {
-			case 0: hindex = (y*(2*width-1))+x; break;
-			case 1: hindex = ((y+1)*(2*width-1))+x; break;
-			case 2: hindex = ((y+1)*(2*width-1))+x+1; break;
-			case 3: hindex = (y*(2*width-1))+x+1; break;
-			case 4: hindex = (y*(2*width-1))+x+width+1; break;
-			}
-			
-			vpos.rawVerts[off+1] = heights[hindex];
-			
-		}
 		
 	}
 	
@@ -135,7 +115,7 @@ public class TileMap implements EngineObject, Renderable {
 			0.5f, 0.5f
 	};
 	private void genMesh(int x, int y) {
-		int pointsoff = (x*height+y)*12;
+		int pointsoff = (y*width+x)*12;
 		int posoff = pointsoff*3;
 		
 		for(int i = 0; i < 5; i++) {
@@ -170,8 +150,40 @@ public class TileMap implements EngineObject, Renderable {
 		
 	}
 	
+	private void updateHeight(int x, int y) {
+		int pointsoff = (y*width+x)*12;
+		int posoff = pointsoff*3;
+		
+		for(int i = 0; i < 5; i++) {
+			int hindex = 0;
+			switch(i) {
+			case 0: hindex = (y*(2*width+1))+x; break;
+			case 1: hindex = ((y+1)*(2*width+1))+x; break;
+			case 2: hindex = ((y+1)*(2*width+1))+x+1; break;
+			case 3: hindex = (y*(2*width+1))+x+1; break;
+			case 4: hindex = (y*(2*width+1))+x+width+1; break;
+			}
+			
+			
+			if(i == 4) {
+				for(int j = 0; j < 4; j++)
+				{
+					int off = posoff + ((j*3 + 2)*3);
+					vpos.rawVerts[off+1] = heights[hindex];
+				}
+			} else {
+				for(int j = 0; j < 2; j++)
+				{
+					int off = posoff + ((i*3 + j*10)%12)*3;
+					vpos.rawVerts[off+1] = heights[hindex];
+				}
+			}
+		}
+		
+	}
+	
 	private void updateNormals(int x, int y) {
-		int pointsoff = (x*height+y)*12;
+		int pointsoff = (y*width+x)*12;
 		
 		for(int j = 0; j < 4; j++) {
 			
@@ -199,7 +211,7 @@ public class TileMap implements EngineObject, Renderable {
 	
 	private void updateTexCoords(int x, int y) {
 		
-		int pointsoff = (x*height+y)*12;
+		int pointsoff = (y*width+x)*12;
 		int texoff = pointsoff*2;
 		
 		if(texs == null) {
@@ -393,11 +405,12 @@ public class TileMap implements EngineObject, Renderable {
 		}
 	}
 	
-	public void updateModel() {
+	// TODO: implements as flush for changes
+	/*public void updateModel() {
 		
 		
 		
-	}
+	}*/
 	
 	private void initLuaTable() {
 		
@@ -429,7 +442,111 @@ public class TileMap implements EngineObject, Renderable {
 				return shader.getEngineReference();
 			}
 		});
-		
+		ref.set("updateTile", new TwoArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1) {
+				if(!(arg0 instanceof LuaInteger && arg1 instanceof LuaInteger))
+					return NIL;
+				
+				int x = arg0.checkint();
+				int y = arg1.checkint();
+				
+				updateTexCoords(x, y);
+				updateHeight(x, y);
+				updateNormals(x, y);
+				
+				int num = y*width + x;
+				glLoader.updateTilesTiles(TileMap.this, num);
+				
+				return NIL;
+			}
+		});
+		ref.set("tile", new ThreeArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1, LuaValue arg2) {
+				if(arg0 instanceof LuaInteger && arg1 instanceof LuaInteger) {
+					int x = arg0.checkint();
+					int y = arg1.checkint();
+					if(!(arg2 instanceof LuaInteger))
+						return LuaValue.valueOf(tiles[x][y]);
+					
+					int originalTile = tiles[x][y];
+					int newTile = arg2.checkint();
+					if(originalTile == newTile)
+						return LuaValue.valueOf(originalTile);
+					
+					tiles[x][y] = newTile;
+					
+					for(int ox = -1; ox < 2; ox++) {
+						for(int oy = -1; oy < 2; oy++) {
+							
+							int ax = x + ox;
+							int ay = y + oy;
+							if(ax < 0 || ax >= width || ay < 0 || ay >= height)
+								continue;
+							
+							
+							updateTexCoords(ax, ay);
+							
+							int num = ay*width + ax;
+							glLoader.updateTilesTiles(TileMap.this, num);
+							
+						}
+					}
+					
+					return LuaValue.valueOf(newTile);
+				}
+				
+				return NIL;
+			}
+		});
+		ref.set("pointHeight", new TwoArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0, LuaValue arg1) {
+				if(!(arg0 instanceof LuaInteger))
+					return NIL;
+				
+				int offset = arg0.checkint();
+				if(offset < 0 || offset >= heights.length)
+					return NIL;
+				
+				if(!(arg1 instanceof LuaDouble) && !(arg1 instanceof LuaInteger))
+					return LuaValue.valueOf(heights[offset]);
+				
+				int drow = 2*width+1;
+				int x = offset%drow;
+				int y = offset/drow; 
+				if(x > width) {
+					// Middlepoint
+					x -= (width+1);
+					
+					updateHeight(x, y);
+					updateNormals(x, y);
+					
+				} else {
+					// Corners
+					
+					for(int ox = -1; ox < 1; ox++) {
+						for(int oy = -1; oy < 1; oy++) {
+							int ax = x + ox;
+							int ay = y + oy;
+							if(ax < 0 || ax >= width || ay < 0 || ay >= height)
+								continue;
+							updateHeight(ax, ay);
+							updateNormals(ax, ay);
+						}
+					}
+					
+				}
+				
+				heights[offset] = arg1.tofloat();
+				updateHeight(offset%width, offset/width);
+				int num = y*width + x;
+				glLoader.updateTilesTiles(TileMap.this, num);
+				
+				return LuaValue.valueOf(heights[offset]);
+			}
+		});
 	}
 	
 	@Override
