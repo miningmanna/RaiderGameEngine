@@ -4,7 +4,7 @@ rge.assetSource("dir", "Data")
 rge.assetSource("dir", "NonGitignoreData")
 rge.assetSource("wad", "Data/test2.wad")
 
-require "tileMapPrepare"
+require "tileMapObj"
 
 rge.assetSource("dir", "ldraw")
 rge.assetSource("dir", "ldraw/models")
@@ -49,6 +49,8 @@ else
 	print("Getting: Lego*/Main/RenameReplace")
 	print(conf.getValue("Lego*/Main/RenameReplace"))
 end
+
+initTexSets(conf)
 
 --[[moveSet = {}
 
@@ -191,7 +193,7 @@ end
 rge.registerEvent("update", update);
 
 --levelpath = "Lego*/Levels/Tutorial04/"
-levelpath = "Lego*/Levels/Level01/"
+levelpath = "Lego*/Levels/Level22/"
 
 surfmapPath = conf.getValue(levelpath.."TerrainMap")
 --surfmapPath = string.sub(surfmapPath, 23, -1)
@@ -206,36 +208,19 @@ pathmap = rge.get(pathmapPath)
 heightmapPath = conf.getValue(levelpath.."SurfaceMap")
 heightmap = rge.get(heightmapPath)
 
-texFormatStrings = {
-	["Textures::ROCK"] = 'World/WorldTextures/RockSplit/ROCK%d%d.BMP',
-	["Textures::LAVA"] = 'World/WorldTextures/LavaSplit/LAVA%d%d.BMP',
-	["Textures::ICE"] = 'World/WorldTextures/IceSplit/ICE%d%d.BMP',
-	["Textures::Rock"] = 'World/WorldTextures/RockSplit/ROCK%d%d.BMP',
-	["Textures::Lava"] = 'World/WorldTextures/LavaSplit/LAVA%d%d.BMP',
-	["Textures::Ice"] = 'World/WorldTextures/IceSplit/ICE%d%d.BMP',
-}
+
 
 texSet = conf.getValue(levelpath.."TextureSet")
 print("Texset:")
 print(texSet)
-texFormatString = texFormatStrings[texSet]
 
-rawTileMap = loadFromMaps(surfmap, heightmap, pathmap)
+--rawTileMap = loadFromMaps(surfmap, heightmap, pathmap)
 
-rawTileMapTexture = rge.newRawTileMapTexture(8, 8)
-for x = 0,7,1 do
-	for y = 0,7,1 do
-		rawTileMapTexture.texture(x, y, string.format(texFormatString, x, y))
-	end
-end
-populateRawTex(rawTileMapTexture)
-rawTileMap.texture(rawTileMapTexture)
-
-tileMap = rge.newTileMap(rawTileMap)
-tileMap.shader(tilemapShader)
+local mapObj = getMap(conf, levelpath)
+mapObj.tmap.shader(tilemapShader)
 
 tileMapNode = rge.newDrawNode()
-tileMapNode.model(tileMap)
+tileMapNode.model(mapObj.tmap)
 
 for y = 1, #surfmap[1] do
 	for x = 1,#surfmap  do
