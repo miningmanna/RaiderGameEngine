@@ -34,11 +34,11 @@ dirVec.y(-1)
 dirVec.z(1)
 directional = rge.newDirectionalLight()
 directional.direction(dirVec)
-directional.intensity(0.5)
+directional.intensity(0.8)
 directional.color(255, 255, 255)
 
 ambient = rge.newAmbientLight()
-ambient.intensity(0.5)
+ambient.intensity(0.2)
 lights.add(ambient)
 lights.add(directional)
 
@@ -101,7 +101,7 @@ rootNode.setMoves(moveSet)
 
 ]]--
 
-lws = rge.get("NEW_Captain_Point_E.lws")
+lws = rge.get("CAPTAIN/NEW_Captain_Point_E.lws")
 
 local function genNodeTree(root, nodeNames, models)
 	
@@ -111,6 +111,7 @@ local function genNodeTree(root, nodeNames, models)
 			node.name(k)
 			print("LUA NODE: "..k)
 			if models[k].model ~= nil then
+				print(models[k].model)
 				local m = rge.get(models[k].model)
 				if m ~= nil then
 					m.shader(modelShader)
@@ -142,22 +143,28 @@ genNodeTree(rootNode, lws.nodes, lws.models)
 setLoop(lws.moveSet, true)
 rootNode.setMoves(lws.moveSet)
 
+--[[
+capBaseModel = rge.get("CAPTAIN/CAP_HEAD.LWO")
+capBaseModel.shader(modelShader)
+rootNode.model(capBaseModel)
+]]--
+
 mouseSens = 0.005
 
 
-levelpath = "Lego*/Levels/Level22/"
+levelpath = "Lego*/Levels/Tutorial08/"
 mapObj = getMap(conf, levelpath)
 mapObj.tmap.shader(tilemapShader)
 
 tileMapNode = rge.newDrawNode()
 tileMapNode.model(mapObj.tmap)
 
-changerate = 20.0
+changerate = 1.0
 changedt = 1/changerate
 
 st = 0
-x = -1
-y = 0
+x = 1
+y = 2
 
 function update(dt)
 	
@@ -166,15 +173,15 @@ function update(dt)
 	if st > changedt then
 		st = math.fmod(st, changedt)
 		x = x+1
-		if x >= #mapObj.surf then
-			x = 0
+		if x > #mapObj.surf-1 then
+			x = 2
 			y = y + 1
-			if y >= #mapObj.surf[1] then
-				y = 0
+			if y > #mapObj.surf[1]-1 then
+				y = 2
 			end
 		end
 		
-		mapObj.tmap.tile(x, y, 30)
+		mapObj:breakRock(x, y)
 		
 	end
 	

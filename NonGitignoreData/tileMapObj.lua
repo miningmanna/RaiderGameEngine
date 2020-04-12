@@ -68,13 +68,42 @@ function getMap(config, configNodePath)
 	
 	map.breakRock = function(self, x, y)
 		
+		local function isIn(val, array)
+			for i, v in ipairs(array) do
+				if v == val then return true end
+			end
+			return false
+		end
 		
+		local id = self.tmap.tile(x-1, y-1)
+		if isIn(id, cliffconnects) then
+			self.tmap.tile(x-1, y-1, 20)
+		else
+			return
+		end
+		
+		for ox = 0,1 do
+			for oy = 0,1 do
+				local ax = x + ox
+				local ay = y + oy
+				local hoff = ((ay-1)*(2*#self.surf+1)) + (ax-1)
+				self.tmap.pointHeight(hoff, self.high[ax][ay]/divFactor)
+			end
+		end
+		
+		for ox = -1, 1 do
+			for oy = -1, 1 do
+				local ax = x + ox
+				local ay = y + oy
+				if ax >= 1 and ax <= #self.surf and ay >= 1 and ay <= #self.surf[1] then
+					updateMidpoint(self.tmap, ax, ay)
+				end
+			end
+		end
 		
 	end
 	
 	map.updateTile = function(self, x, y)
-		
-		
 		
 	end
 	

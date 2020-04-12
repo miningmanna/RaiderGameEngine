@@ -3,11 +3,11 @@ require "connectTex"
 groundConnectMap = makeGroundConnections()
 cliffConnectMap = makeCliffConnections()
 
-local divFactor = 7
+divFactor = 7
 local wallHeight = 1
 
 local ppconnects = { 30, 31 }
-local cliffconnects = { 1, 2, 3, 4, 8, 10, 11 }
+cliffconnects = { 1, 2, 3, 4, 8, 10, 11 }
 
 local types =
 {
@@ -268,6 +268,35 @@ local function neighbourFieldAndTypeIndex(tmap, x, y)
 	return field, idi
 end
 
+function updateMidpoint(tmap, x, y)
+	local field, tid = neighbourFieldAndTypeIndex(tmap, x-1, y-1)
+	
+	local rot = globalTileTypes[tid].state(field).z()/90
+	
+	local hoffc1 = 0
+	local hoffc2 = 0
+	if types[tid].texmap[field].name == "DIAGONAL" then -- Diagonal special case
+		rot = rot + 1
+	end
+	
+	local w = tmap.width()
+	
+	if rot % 2 == 0 then
+		hoffc1 = ((y-1)*(2*w+1)) + (x-1)
+		hoffc2 = (y*(2*w+1)) + x
+	else
+		hoffc1 = ((y-1)*(2*w+1)) + x
+		hoffc2 = (y*(2*w+1)) + (x-1)
+	end
+	
+	local hoffm = ((y-1)*(2*w+1)) + w + 1 + (x-1)
+	
+	local h1 = tmap.pointHeight(hoffc1)
+	local h2 = tmap.pointHeight(hoffc2)
+	local mid = (h2+h1) / 2
+	tmap.pointHeight(hoffm, mid)
+end
+
 function loadFromMaps(surf, high, path)
 	
 	local tmap = rge.newRawTileMap(#surf, #surf[1])
@@ -301,7 +330,7 @@ function loadFromMaps(surf, high, path)
 		local hoff = ((y-1)*(2*#surf+1)) + (x-1)
 		tmap.pointHeight(hoff, wallHeight + high[x-1][y]/divFactor)
 	end
-	tmap.pointHeight((#surf+1)*(#surf[1]+1) + (#surf)*(#surf[1]) - 1, 1.5 + high[#surf][#surf[1]]/divFactor)
+	tmap.pointHeight((#surf+1)*(#surf[1]+1) + (#surf)*(#surf[1]) - 1, wallHeight + high[#surf][#surf[1]]/divFactor)
 	
 	-- set points touching ground to ground height
 	for x = 1, #surf do
@@ -323,7 +352,7 @@ function loadFromMaps(surf, high, path)
 						local ax = x + ox
 						local ay = y + oy
 						local hoff = ((ay-1)*(2*#surf+1)) + (ax-1)
-						tmap.pointHeight(hoff, high[x][y]/divFactor)
+						tmap.pointHeight(hoff, high[ax][ay]/divFactor)
 					end
 				end
 			end
@@ -334,31 +363,7 @@ function loadFromMaps(surf, high, path)
 	-- update midpoint
 	for x = 1, #surf do
 		for y = 1, #surf[x] do
-			
-			local field, tid = neighbourFieldAndTypeIndex(tmap, x-1, y-1)
-			
-			local rot = globalTileTypes[tid].state(field).z()/90
-			
-			local hoffc1 = 0
-			local hoffc2 = 0
-			if types[tid].texmap[field].name == "DIAGONAL" then -- Diagonal special case
-				rot = rot + 1
-			end
-			
-			if rot % 2 == 0 then
-				hoffc1 = ((y-1)*(2*#surf+1)) + (x-1)
-				hoffc2 = (y*(2*#surf+1)) + x
-			else
-				hoffc1 = ((y-1)*(2*#surf+1)) + x
-				hoffc2 = (y*(2*#surf+1)) + (x-1)
-			end
-			
-			local hoffm = ((y-1)*(2*#surf+1)) + #surf + 1 + (x-1)
-			
-			local h1 = tmap.pointHeight(hoffc1)
-			local h2 = tmap.pointHeight(hoffc2)
-			local mid = (h2+h1) / 2
-			tmap.pointHeight(hoffm, mid)
+			updateMidpoint(tmap, x, y)
 		end
 	end
 	

@@ -56,8 +56,10 @@ void main() {
 	vec3 camPos = -vec3(camera[3].xyz);				// CAMPOSITION IS NOT CORRECT!
 	float dist2Cam = length(mPos - camPos);
 	
-	mat3 normalMatrix = transpose(mat3(transform));
+	mat3 normalMatrix = transpose(inverse(mat3(transform)));
 	vec3 normal = normalize(normalMatrix * mNormal);
+	if(determinant(mat3(transform)) < 0) // Surface flipped!
+		normal *= -1;
 	
 	vec4 ambientRes = vec4(ambientLight.xyz*surfColor.xyz*ambientLight.w, surfColor.w);
 	
@@ -112,5 +114,6 @@ void main() {
 		spotRes += k * spotLights[i].color * surfColor.xyz;
 	}
 	
+	//color = vec4(0.5 + normal/2, 1.0);
 	color = ambientRes + vec4(dirRes, 0) + vec4(pointRes, 0) + vec4(spotRes, 0);
 }

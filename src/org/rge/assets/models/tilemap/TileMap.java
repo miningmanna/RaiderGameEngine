@@ -118,33 +118,44 @@ public class TileMap implements EngineObject, Renderable {
 		int pointsoff = (y*width+x)*12;
 		int posoff = pointsoff*3;
 		
-		for(int i = 0; i < 5; i++) {
-			int hindex = 0;
-			switch(i) {
-			case 0: hindex = (y*(2*width+1))+x; break;
-			case 1: hindex = ((y+1)*(2*width+1))+x; break;
-			case 2: hindex = ((y+1)*(2*width+1))+x+1; break;
-			case 3: hindex = (y*(2*width+1))+x+1; break;
-			case 4: hindex = (y*(2*width+1))+x+width+1; break;
-			}
-			
-			
-			if(i == 4) {
-				for(int j = 0; j < 4; j++)
-				{
-					int off = posoff + ((j*3 + 2)*3);
-					vpos.rawVerts[off+0] = x + POS_OFFSETS[i*2];
-					vpos.rawVerts[off+1] = heights[hindex];
-					vpos.rawVerts[off+2] = y + POS_OFFSETS[i*2+1];
+		for(int i = 0; i < 4; i++) {
+			for(int j = 0; j < 3; j++) {
+				int off = posoff + (i*3+j)*3;
+				
+				int hindex = 0;
+				int posoffi = 0;
+				switch(i*3+j) {
+				case 0:
+				case 10:
+					posoffi = 0;
+					hindex = (y*(2*width+1))+x;
+					break;
+				case 1:
+				case 3:
+					posoffi = 1;
+					hindex = ((y+1)*(2*width+1))+x;
+					break;
+				case 4:
+				case 6:
+					posoffi = 2;
+					hindex = ((y+1)*(2*width+1))+x+1;
+					break;
+				case 9:
+				case 7:
+					posoffi = 3;
+					hindex = (y*(2*width+1))+x+1;
+					break;
+				case 2:
+				case 5:
+				case 8:
+				case 11:
+					posoffi = 4;
+					hindex = (y*(2*width+1))+x+width+1;
+					break;
 				}
-			} else {
-				for(int j = 0; j < 2; j++)
-				{
-					int off = posoff + ((i*3 + j*10)%12)*3;
-					vpos.rawVerts[off+0] = x + POS_OFFSETS[i*2];
-					vpos.rawVerts[off+1] = heights[hindex];
-					vpos.rawVerts[off+2] = y + POS_OFFSETS[i*2+1];
-				}
+				vpos.rawVerts[off+0] = x + POS_OFFSETS[posoffi*2];
+				vpos.rawVerts[off+1] = heights[hindex];
+				vpos.rawVerts[off+2] = y + POS_OFFSETS[posoffi*2+1];
 			}
 		}
 		
@@ -154,29 +165,36 @@ public class TileMap implements EngineObject, Renderable {
 		int pointsoff = (y*width+x)*12;
 		int posoff = pointsoff*3;
 		
-		for(int i = 0; i < 5; i++) {
-			int hindex = 0;
-			switch(i) {
-			case 0: hindex = (y*(2*width+1))+x; break;
-			case 1: hindex = ((y+1)*(2*width+1))+x; break;
-			case 2: hindex = ((y+1)*(2*width+1))+x+1; break;
-			case 3: hindex = (y*(2*width+1))+x+1; break;
-			case 4: hindex = (y*(2*width+1))+x+width+1; break;
-			}
-			
-			
-			if(i == 4) {
-				for(int j = 0; j < 4; j++)
-				{
-					int off = posoff + ((j*3 + 2)*3);
-					vpos.rawVerts[off+1] = heights[hindex];
+		for(int i = 0; i < 4; i++) {
+			for(int j = 0; j < 3; j++) {
+				int off = posoff + (i*3+j)*3;
+				
+				int hindex = 0;
+				switch(i*3+j) {
+				case 0:
+				case 10:
+					hindex = (y*(2*width+1))+x;
+					break;
+				case 1:
+				case 3:
+					hindex = ((y+1)*(2*width+1))+x;
+					break;
+				case 4:
+				case 6:
+					hindex = ((y+1)*(2*width+1))+x+1;
+					break;
+				case 9:
+				case 7:
+					hindex = (y*(2*width+1))+x+1;
+					break;
+				case 2:
+				case 5:
+				case 8:
+				case 11:
+					hindex = (y*(2*width+1))+x+width+1;
+					break;
 				}
-			} else {
-				for(int j = 0; j < 2; j++)
-				{
-					int off = posoff + ((i*3 + j*10)%12)*3;
-					vpos.rawVerts[off+1] = heights[hindex];
-				}
+				vpos.rawVerts[off+1] = heights[hindex];
 			}
 		}
 		
@@ -415,6 +433,20 @@ public class TileMap implements EngineObject, Renderable {
 	private void initLuaTable() {
 		
 		ref = new EngineReference(this);
+		
+		ref.set("width", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return LuaValue.valueOf(width);
+			}
+		});
+		ref.set("height", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return LuaValue.valueOf(height);
+			}
+		});
+		
 		ref.set("shader", new OneArgFunction() {
 			@Override
 			public LuaValue call(LuaValue arg0) {
@@ -452,7 +484,7 @@ public class TileMap implements EngineObject, Renderable {
 				int y = arg1.checkint();
 				
 				updateTexCoords(x, y);
-				updateHeight(x, y);
+				genMesh(x, y);
 				updateNormals(x, y);
 				
 				int num = y*width + x;
@@ -513,15 +545,19 @@ public class TileMap implements EngineObject, Renderable {
 				if(!(arg1 instanceof LuaDouble) && !(arg1 instanceof LuaInteger))
 					return LuaValue.valueOf(heights[offset]);
 				
+				heights[offset] = arg1.tofloat();
+				
 				int drow = 2*width+1;
 				int x = offset%drow;
 				int y = offset/drow; 
 				if(x > width) {
 					// Middlepoint
-					x -= (width+1);
+					x -= width+1;
 					
 					updateHeight(x, y);
 					updateNormals(x, y);
+					int num = y*width + x;
+					glLoader.updateTilesTiles(TileMap.this, num);
 					
 				} else {
 					// Corners
@@ -534,15 +570,13 @@ public class TileMap implements EngineObject, Renderable {
 								continue;
 							updateHeight(ax, ay);
 							updateNormals(ax, ay);
+							
+							int num = ay*width + ax;
+							glLoader.updateTilesTiles(TileMap.this, num);
 						}
 					}
 					
 				}
-				
-				heights[offset] = arg1.tofloat();
-				updateHeight(offset%width, offset/width);
-				int num = y*width + x;
-				glLoader.updateTilesTiles(TileMap.this, num);
 				
 				return LuaValue.valueOf(heights[offset]);
 			}
