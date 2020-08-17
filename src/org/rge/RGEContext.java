@@ -3,9 +3,13 @@ package org.rge;
 import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 
+import javax.sound.sampled.AudioInputStream;
+
 import org.rge.graphics.Camera;
+import org.rge.graphics.ShaderArgs;
 import org.rge.graphics.Renderer;
 import org.rge.graphics.light.AmbientLight;
 import org.rge.graphics.light.DirectionalLight;
@@ -20,6 +24,8 @@ import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;
 import org.rge.node.DrawNode;
 import org.rge.node.Move;
+import org.rge.sound.SoundSystem;
+import org.rge.sound.Source;
 import org.joml.Vector3f;
 import org.luaj.vm2.LuaDouble;
 import org.luaj.vm2.LuaFunction;
@@ -35,6 +41,7 @@ import org.luaj.vm2.lib.ZeroArgFunction;
 import org.lwjgl.opengl.GL;
 import org.rge.EventManager.EventHandler;
 import org.rge.assets.AssetManager;
+import org.rge.assets.audio.SoundClip.RawSoundClip;
 import org.rge.assets.config.Config;
 import org.rge.assets.models.Model;
 import org.rge.assets.models.Model.RawData;
@@ -54,6 +61,7 @@ public class RGEContext implements EngineObject {
 	EventManager em;
 	LuaEngine luaEngine;
 	Renderer renderer;
+	SoundSystem soundSystem;
 	
 	Color clearColor;
 	
@@ -86,6 +94,7 @@ public class RGEContext implements EngineObject {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		
 		renderer = new Renderer();
+		soundSystem = new SoundSystem();
 		
 		initLuaTable();
 		
@@ -123,6 +132,8 @@ public class RGEContext implements EngineObject {
 		lastTime = currentTime;
 		
 		tickHandler.fire(LuaValue.valueOf(dt));
+		
+		soundSystem.update();
 	}
 	
 	public void render() {
@@ -148,6 +159,7 @@ public class RGEContext implements EngineObject {
 		
 		// TODO: clean up everything
 		am.destroy();
+		soundSystem.destroy();
 		
 		window.destroy();
 		
@@ -167,6 +179,10 @@ public class RGEContext implements EngineObject {
 	
 	public void useLights(LightGroup lights) {
 		renderer.setLightGroup(lights);
+	}
+	
+	private void useShaderArgs(ShaderArgs args) {
+		renderer.setShaderArgs(args);
 	}
 	
 	@Override
@@ -318,6 +334,18 @@ public class RGEContext implements EngineObject {
 				return NIL;
 			}
 		});
+		engReference.set("newSoundSource", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return new Source(soundSystem).getEngineReference();
+			}
+		});
+		engReference.set("newShaderArgs", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return new ShaderArgs().getEngineReference();
+			}
+		});
 		
 		engReference.set("clearColor", new VarArgFunction() {
 			@Override
@@ -393,7 +421,8 @@ public class RGEContext implements EngineObject {
 					return NIL;
 				String path = arg0.checkjstring();
 				
-				Object res = am.getValueOfSub(path, LuaValue.class, EngineObject.class, RawData.class);
+				Object res = am.getValueOfSub(path, LuaValue.class, EngineObject.class, RawData.class, RawSoundClip.class, AudioInputStream.class, BufferedImage.class);
+				System.out.println("1234: " + res);
 				if(res == null)
 					return NIL;
 				LuaValue val = null;
@@ -403,6 +432,12 @@ public class RGEContext implements EngineObject {
 					try {
 						val = new Model(am, (RawData) res, false).getEngineReference();
 					} catch (IOException e) { val = NIL; }
+				else if(res instanceof RawSoundClip)
+					return am.loadSoundClip((RawSoundClip) res).getEngineReference();
+				else if(res instanceof AudioInputStream)
+					return am.loadSoundStream((AudioInputStream) res).getEngineReference();
+				else if(res instanceof BufferedImage)
+					return am.loadTexture((BufferedImage) res).getEngineReference();
 				else
 					val = (LuaValue) res;
 				return val;
@@ -441,8 +476,12 @@ public class RGEContext implements EngineObject {
 					useCamera((Camera) ref.parent);
 				else if(ref.parent instanceof LightGroup)
 					useLights((LightGroup) ref.parent);
+				else if(ref.parent instanceof ShaderArgs)
+					useShaderArgs((ShaderArgs) ref.parent);
+				
 				return engReference;
 			}
+			
 		});
 		
 		engReference.set("registerEvent", new TwoArgFunction() {

@@ -6,6 +6,7 @@ import static org.lwjgl.opengl.GL30.*;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -23,7 +24,8 @@ public class Renderer {
 	Vector3f translatedMidPoint = new Vector3f();
 	
 	private Matrix4f camMatrix;
-	private LightGroup group;
+	private LightGroup lightGroup;
+	private ShaderArgs shaderArgs;
 	
 	public Renderer() {
 		opaqueBatches = new ArrayList<>();
@@ -56,15 +58,21 @@ public class Renderer {
 		
 		if(node.model != null) {
 			
+			HashMap<String, Object> args = null;
+			if(shaderArgs != null)
+				args = new HashMap<>(shaderArgs.args);
+			
 			DrawBatch opaqueBatch = new DrawBatch();
 			opaqueBatch.camera = camMatrix;
-			opaqueBatch.lights = group;
+			opaqueBatch.lights = lightGroup;
 			opaqueBatch.transform = transform;
+			opaqueBatch.args = args;
 			
 			DrawBatch translucentBatch = new DrawBatch();
 			translucentBatch.camera = camMatrix;
-			translucentBatch.lights = group;
+			translucentBatch.lights = lightGroup;
 			translucentBatch.transform = transform;
+			translucentBatch.args = args;
 			
 			for(Surface s : node.model.getSurfs()) {
 				if(s.isTranslucent)
@@ -147,6 +155,7 @@ public class Renderer {
 			batchShader.setCamera(batch.camera);
 			batchShader.setTransform(batch.transform);
 			batchShader.setLights(batch.lights);
+			batchShader.applyArgs(batch.args);
 			
 			for(Surface s : batch.toDraw)
 				drawSurface(s);
@@ -254,7 +263,11 @@ public class Renderer {
 	}
 	
 	public void setLightGroup(LightGroup group) {
-		this.group = group;
+		this.lightGroup = group;
+	}
+	
+	public void setShaderArgs(ShaderArgs args) {
+		this.shaderArgs = args;
 	}
 	
 	private static class DrawBatch {
@@ -265,5 +278,6 @@ public class Renderer {
 		public ArrayList<Surface> toDraw;
 		public Matrix4f camera;
 		public Matrix4f transform;
+		public HashMap<String, Object> args;
 	}
 }

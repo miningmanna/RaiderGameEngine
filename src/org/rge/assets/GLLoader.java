@@ -114,10 +114,6 @@ public class GLLoader {
 				int dim = tileMap.verts[j].dimension;
 				int off = i*12*dim;
 				
-				System.out.println(j + " : " + dim + " " + tileMap.usedVBOs[j]);
-				System.out.println(12*dim);
-				System.out.println(off);
-				
 				bufferVertexSub(
 						tileMap.vbos[j],
 						off,

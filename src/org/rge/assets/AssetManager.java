@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.net.URL;
@@ -16,9 +17,14 @@ import java.util.HashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import javax.sound.sampled.AudioInputStream;
+
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
+import org.rge.assets.audio.SoundClip;
+import org.rge.assets.audio.SoundClip.RawSoundClip;
+import org.rge.assets.audio.SoundStream;
 import org.rge.assets.config.Config;
 import org.rge.assets.io.InputGen;
 import org.rge.assets.models.Model;
@@ -36,6 +42,7 @@ public class AssetManager implements EngineObject {
 	private HashMap<String, Shader> shaders;
 	
 	private GLLoader glLoader;
+	private ALLoader alLoader;
 	
 	private ArrayList<InputGen> inputGens;
 	private HashMap<LoaderTAR, Loader> loadersTAR;
@@ -71,7 +78,41 @@ public class AssetManager implements EngineObject {
 		
 	}
 	
-	public static void loadClassesFromJar(File jarFile) throws IOException {
+	public static void loadClassesFromJars(File... jars) throws IOException {
+		
+		
+		try {
+			ClassLoader cl = ClassLoader.getSystemClassLoader();
+			Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[]{URL.class});
+			method.setAccessible(true);
+			for(int i = 0; i < jars.length; i++) {
+				if(jars[i] == null)
+					continue;
+				if(jars[i].isDirectory())
+					continue;
+				if(!jars[i].getName().toUpperCase().endsWith(".JAR"))
+					continue;
+				
+				method.invoke(cl, new Object[]{jars[i].toURI().toURL()});
+			}
+			
+			for(int i = 0; i < jars.length; i++) {
+				if(jars[i] == null)
+					continue;
+				if(jars[i].isDirectory())
+					continue;
+				if(!jars[i].getName().toUpperCase().endsWith(".JAR"))
+					continue;
+				
+				loadClassesFromJar(cl, jars[i]);
+			}
+		} catch (Throwable t) {
+			t.printStackTrace();
+			throw new IOException("Error, could not add URL to system classloader");
+		}
+	}
+	
+	public static void loadClassesFromJar(ClassLoader cl, File jarFile) throws IOException {
 		
 		if(jarFile == null)
 			return;
@@ -79,8 +120,9 @@ public class AssetManager implements EngineObject {
 		JarFile jar = new JarFile(jarFile);
 		Enumeration<JarEntry> jarEntries = jar.entries();
 		
-		URL[] urls = { new URL("jar:file:" + jarFile.getAbsolutePath() + "!/")};
-		URLClassLoader cl = new URLClassLoader(urls);
+		System.out.println("--------------------------------------");
+		System.out.println(jarFile);
+		System.out.println(cl);
 		
 		while(jarEntries.hasMoreElements()) {
 			JarEntry je = jarEntries.nextElement();
@@ -89,9 +131,10 @@ public class AssetManager implements EngineObject {
 			
 			String className = je.getName();
 			className = className.substring(0, className.length()-6).replace('/', '.');
+			System.out.println("LOADING CLASS FROM JAR: " + className);
 			try {
 				Class<?> mClass = cl.loadClass(className);
-				
+				System.out.println("CLASS LOADED");
 				
 				Type[] interfaces = mClass.getGenericInterfaces();
 				for(Type t : interfaces) {
@@ -159,7 +202,6 @@ public class AssetManager implements EngineObject {
 			
 		}
 		
-		cl.close();
 		jar.close();
 		
 	}
@@ -207,6 +249,7 @@ public class AssetManager implements EngineObject {
 		inputGens = new ArrayList<>();
 		shaders = new HashMap<>();
 		glLoader = new GLLoader();
+		alLoader = new ALLoader();
 		
 		loadersTAR = new HashMap<>();
 		loadersC = new HashMap<>();
@@ -255,7 +298,7 @@ public class AssetManager implements EngineObject {
 		
 	
 	}
-	// TODO: remove the need from functions to supply the type of a file for mounting and asset loading
+	// TODO: remove the need from functions to supply the type of a file for mounting
 	
 	public Texture loadTexture(BufferedImage img) {
 		if(img == null)
@@ -440,6 +483,7 @@ public class AssetManager implements EngineObject {
 			shaders.get(key).destroy();
 		
 		glLoader.destroy();
+		alLoader.destroy();
 		
 	}
 	
@@ -499,6 +543,18 @@ public class AssetManager implements EngineObject {
 	
 	public GLLoader getGLLoader() {
 		return glLoader;
+	}
+	
+	public ALLoader getALLoader() {
+		return alLoader;
+	}
+	
+	public SoundClip loadSoundClip(RawSoundClip res) {
+		return alLoader.loadRawSoundClip(res);
+	}
+	
+	public SoundStream loadSoundStream(AudioInputStream in) {
+		return alLoader.loadSoundStream(in);
 	}
 	
 }

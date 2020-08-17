@@ -23,6 +23,10 @@ public class Vector3 extends Vector3f implements EngineObject {
 		this(0, 0, 0);
 	}
 	
+	public Vector3(Vector3 o) {
+		this(o.x, o.y, o.z);
+	}
+
 	@Override
 	public EngineReference getEngineReference() {
 		return engReference;
@@ -92,7 +96,7 @@ public class Vector3 extends Vector3f implements EngineObject {
 			public LuaValue call(LuaValue arg0) {
 				Vector3f other = LuaUtils.getVector3Arg(arg0);
 				if(other != null)
-					Vector3.this.div(other);
+					Vector3.this.mul(other);
 				else if(arg0 instanceof LuaInteger || arg0 instanceof LuaDouble)
 					mul(arg0.checkdouble());
 				return engReference;

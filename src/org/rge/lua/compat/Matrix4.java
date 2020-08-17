@@ -22,6 +22,11 @@ public class Matrix4 extends Matrix4f implements EngineObject {
 		initLuaTable();
 	}
 	
+	public Matrix4(Matrix4 p) {
+		super(p);
+		initLuaTable();
+	}
+
 	private void initLuaTable() {
 		ref = new EngineReference(this);
 		
@@ -55,13 +60,13 @@ public class Matrix4 extends Matrix4f implements EngineObject {
 			public LuaValue call(LuaValue val) {
 				Method set = null;
 				try {
-					set = getClass().getMethod(("m" + column) + row, Float.class);
+					set = Matrix4.class.getMethod(("m" + column) + row, float.class);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 				Method get = null;
 				try {
-					get = getClass().getMethod(("m" + column) + row, new Class<?>[]{});
+					get = Matrix4.class.getMethod(("m" + column) + row, new Class<?>[]{});
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -77,13 +82,12 @@ public class Matrix4 extends Matrix4f implements EngineObject {
 					
 				}
 				
-				int res = 0;
+				float res = 0;
 				try {
-					res = (Integer) get.invoke(Matrix4.this, new Object[]{});
+					res = (float) get.invoke(Matrix4.this);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-				System.out.println("MATRIX GET: " + column + "," + row + " " + res);
 				return LuaValue.valueOf(res);
 			}
 		};

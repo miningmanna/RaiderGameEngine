@@ -11,12 +11,13 @@ import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.rge.lua.EngineObject;
 import org.rge.lua.EngineReference;
+import org.rge.lua.compat.Vector3;
 
 public class Camera implements EngineObject {
 	
 	EngineReference engReference;
 	
-	public Vector3f position;
+	public Vector3 position;
 	public Matrix4f projection;
 	public Matrix4f combined;
 	public Matrix4f transform;
@@ -32,7 +33,7 @@ public class Camera implements EngineObject {
 		direction = new Vector3f(0, 0, -1);
 		up = new Vector3f(0, 1, 0);
 		right = new Vector3f(1, 0, 0);
-		position = new Vector3f();
+		position = new Vector3();
 		projection = new Matrix4f();
 		combined = new Matrix4f();
 		transform = new Matrix4f();
@@ -202,6 +203,13 @@ public class Camera implements EngineObject {
 				);
 				
 				return NIL;
+			}
+		});
+		
+		engReference.set("position", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return position.getEngineReference();
 			}
 		});
 	}

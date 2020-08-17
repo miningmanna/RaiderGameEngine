@@ -5,6 +5,7 @@ import static org.lwjgl.opengl.GL20.*;
 
 import java.awt.Color;
 import java.nio.FloatBuffer;
+import java.util.HashMap;
 
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -284,8 +285,36 @@ public class Shader implements EngineObject {
 	
 	private void initLuaTable() {
 		engReference = new EngineReference(this);
+		// No need for Lua functions (i guess?)
+		// TODO: NVM need them anyways in case you want to set uni variables once
+	}
+
+	public void applyArgs(HashMap<String, Object> args) {
+		if(args == null)
+			return;
 		
-		// TODO: Add uniform functions for lua
+		for(String key : args.keySet()) {
+			Object o = args.get(key);
+			
+			if(o instanceof Vector3f) {
+				setUniVector3f(key, (Vector3f) o);
+				continue;
+			}
+			if(o instanceof Matrix4f) {
+				setUniMatrix4f(key, (Matrix4f) o);
+				continue;
+			}
+			if(o instanceof Integer) {
+				setUniInteger(key, (Integer) o);
+				continue;
+			}
+			if(o instanceof Float) {
+				setUniFloat(key, (Float) o);
+				continue;
+			}
+			// TODO: add potential argument types
+			
+		}
 		
 	}
 	

@@ -3,8 +3,10 @@ package org.rge.assets.models;
 import java.io.IOException;
 
 import org.joml.Vector3f;
+import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
+import org.luaj.vm2.lib.ZeroArgFunction;
 import org.rge.assets.AssetManager;
 import org.rge.assets.models.Model.RawData.RawSurface;
 import org.rge.assets.models.Texture.TextureRawInfo;
@@ -125,6 +127,26 @@ public class Model implements EngineObject, Renderable {
 				shader = (Shader) _ref.parent;
 				
 				return shader.getEngineReference();
+			}
+		});
+		
+		engReference.set("getSurface", new OneArgFunction() {
+			@Override
+			public LuaValue call(LuaValue arg0) {
+				if(!(arg0 instanceof LuaInteger))
+					return NIL;
+				int i = arg0.checkint();
+				if(i < 0 || i >= surfs.length)
+					return NIL;
+				
+				return surfs[i].getEngineReference();
+			}
+		});
+		
+		engReference.set("getSurfaceCount", new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return LuaValue.valueOf(surfs.length);
 			}
 		});
 		
